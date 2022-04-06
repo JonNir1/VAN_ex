@@ -1,8 +1,8 @@
 import os
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits import mplot3d
 
 cwd = os.getcwd()
 DATA_PATH = os.path.join(cwd, r'dataset\sequences\00')
