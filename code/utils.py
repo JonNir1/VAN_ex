@@ -5,8 +5,7 @@ A set of utility functions to be shared between different exercises.
 import os
 import cv2
 import numpy as np
-
-DATA_PATH = os.path.join(os.getcwd(), r'dataset\sequences\00')
+import config as c
 
 
 # Load a single KITTY image of index $idx into cv2.Image objects
@@ -14,9 +13,9 @@ DATA_PATH = os.path.join(os.getcwd(), r'dataset\sequences\00')
 def read_single_image(idx: int, is_left: bool):
     image_name = "{:06d}.png".format(idx)
     if is_left:
-        image_path = DATA_PATH + '\\image_0\\' + image_name
+        image_path = c.DATA_PATH + '\\image_0\\' + image_name
     else:
-        image_path = DATA_PATH + '\\image_1\\' + image_name
+        image_path = c.DATA_PATH + '\\image_1\\' + image_name
     return cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
 
@@ -34,7 +33,7 @@ def read_cameras():
       k - Intrinsic camera matrix
       m1, m2 - Extrinsic camera matrix (left, right)
     """
-    with open(os.path.join(DATA_PATH, 'calib.txt')) as f:
+    with open(os.path.join(c.DATA_PATH, 'calib.txt')) as f:
         l1 = f.readline().split()[1:]  # skip first token
         l2 = f.readline().split()[1:]  # skip first token
     l1 = [float(i) for i in l1]

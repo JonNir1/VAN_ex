@@ -3,7 +3,7 @@ Representing a pair of KITTY images from the left camera and adjacent indices,
 e.g. img0_left, img1_left (the lower index should always come first)
 """
 
-from . import ImagePairBase
+from ImagePairBase import ImagePairBase
 from .. import utils as u
 
 

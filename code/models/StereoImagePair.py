@@ -3,7 +3,7 @@ Represents a pair of KITTY images with the same index,
 i.e. stereo rectified images
 """
 
-from . import ImagePairBase
+from ImagePairBase import ImagePairBase
 from .. import utils as u
 
 
