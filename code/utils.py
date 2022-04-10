@@ -63,3 +63,23 @@ def create_matcher(matcher_name: str, norm=cv2.NORM_L2, cross_check: bool = True
     raise NotImplementedError("We currently do not " +
                               f"support the {matcher_name} matcher")
 
+
+def homogenize_array():
+    # TODO
+    pass
+
+
+def dehomogenize_array():
+    # TODO
+    pass
+
+
+def euclidean_distance():
+    # TODO
+    pass
+
+
+def pixel_distance():
+    # TODO
+    pass
+
