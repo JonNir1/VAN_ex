@@ -621,26 +621,57 @@ def compute_trajectory_and_distance(num_frames: int = NUM_FRAMES, verbose: bool 
     return estimated_trajectory, ground_truth_trajectory, distances
 
 
+estimated_trajectory, ground_truth_trajectory, distances = compute_trajectory_and_distance(num_frames=NUM_FRAMES,
+                                                                                           verbose=True)
+
+fig, axes = plt.subplots(1, 2)
+fig.suptitle('KITTI Trajectories')
+n = estimated_trajectory.T[0].shape[0]
+markers_sizes = np.ones((n,))
+markers_sizes[[i for i in range(n) if i % 50 == 0]] = 15
+markers_sizes[0], markers_sizes[-1] = 50, 50
+axes[0].scatter(estimated_trajectory.T[0], estimated_trajectory.T[2],
+                   marker="o", s=markers_sizes, c=estimated_trajectory.T[1], cmap="gray", label="estimated")
+axes[0].scatter(ground_truth_trajectory.T[0], ground_truth_trajectory.T[2],
+                   marker="x", s=markers_sizes, c=ground_truth_trajectory.T[1], label="ground truth")
+axes[0].set_title("Trajectories")
+axes[0].legend(loc='best')
+
+axes[1].scatter([i for i in range(n)], distances, c='k', marker='*', s=1)
+axes[1].set_title("Euclidean Distance between Trajectories")
+fig.set_figwidth(10)
+plt.show()
+
+
+
+########################################
+#       TESTING - NOT HW RELATED       #
+########################################
+
 plt.clf()
 num_images = [500, 1000, 1500, 2000, 3000, 3450]
+est_trajects, gt_trajects, dists = [], [], []
 fig, axes = plt.subplots(len(num_images), 2)
 fig.suptitle('KITTI Trajectories for Varying Data-Set Size')
 for i in range(len(num_images)):
     n = num_images[i]
-    estimated_trajectory, ground_truth_trajectory, distances = compute_trajectory_and_distance(n, True)
+    est_traj, gt_traj, curr_dists = compute_trajectory_and_distance(n, True)
+    est_trajects.append(est_traj)
+    gt_trajects.append(gt_traj)
+    dists.append(curr_dists)
 
     markers_sizes = np.ones((n,))
     markers_sizes[[i for i in range(n) if i % 50 == 0]] = 15
     markers_sizes[0], markers_sizes[-1] = 50, 50
 
-    axes[i][0].scatter(estimated_trajectory.T[0], estimated_trajectory.T[2],
-                       marker="o", s=markers_sizes, c=estimated_trajectory.T[1], cmap="gray", label="estimated")
-    axes[i][0].scatter(ground_truth_trajectory.T[0], ground_truth_trajectory.T[2],
-                       marker="x", s=markers_sizes, c=ground_truth_trajectory.T[1], label="ground truth")
+    axes[i][0].scatter(est_traj.T[0], est_traj.T[2],
+                       marker="o", s=markers_sizes, c=est_traj.T[1], cmap="gray", label="estimated")
+    axes[i][0].scatter(gt_traj.T[0], gt_traj.T[2],
+                       marker="x", s=markers_sizes, c=gt_traj.T[1], label="ground truth")
     title_left = f"Trajectories for\n{n} Images" if i == 0 else f"{n} Images"
     axes[i][0].set_title(title_left)
 
-    axes[i][1].scatter([i for i in range(n)], distances, c='k', marker='*', s=1)
+    axes[i][1].scatter([i for i in range(n)], curr_dists, c='k', marker='*', s=1)
     title_right = "Distance between Trajectories" if i == 0 else ""
     axes[i][1].set_title(title_right)
 
@@ -648,7 +679,11 @@ for i in range(len(num_images)):
         axes[i][0].legend(loc='best')
 
 fig.tight_layout()
+fig.set_figheight(18)
 plt.show()
+
+
+
 
 
 
