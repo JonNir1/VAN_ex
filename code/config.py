@@ -1,9 +1,10 @@
 import os
-import cv2
+
+Epsilon = 1e-10
 
 DATA_PATH = os.path.join(os.getcwd(), r'dataset\sequences\00')
 
-MaxYDistanceForStereoInliers = 2
+DEFAULT_DETECTOR_NAME = "sift"
+DEFAULT_MATCHER_NAME = "flann"
 
-DEFAULT_DETECTOR = cv2. SIFT_create()
-DEFAULT_MATCHER = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
+

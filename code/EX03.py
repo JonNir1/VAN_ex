@@ -59,7 +59,7 @@ def extract_keypoints_and_inliers(img0, img1):
         else:
             outlier_matches.append(m)
 
-    # sorting matches by the first kp index (useful later for consensus matches)
+    # sorting matches by the first kp idx (useful later for consensus matches)
     inlier_matches = sorted(inlier_matches, key=lambda match: match.queryIdx)
     outlier_matches = sorted(outlier_matches, key=lambda match: match.queryIdx)
     return kps0, desc0, kps1, desc1, inlier_matches, outlier_matches
@@ -112,7 +112,7 @@ def find_consensus_matches_indices(back_inliers, front_inliers, tracking_inliers
     # TODO: make this more efficient (from o(n^2) to O(n*logn)), see:
     #  https://stackoverflow.com/questions/71764536/most-efficient-way-to-match-2d-coordinates-in-python
     #
-    # Returns a list of 3-tuples indices, representing the index of the consensus match
+    # Returns a list of 3-tuples indices, representing the idx of the consensus match
     # in each of the 3 original match-lists
     consensus = []
     back_inliers_left_idx = [m.queryIdx for m in back_inliers]
@@ -681,9 +681,6 @@ for i in range(len(num_images)):
 fig.tight_layout()
 fig.set_figheight(18)
 plt.show()
-
-
-
 
 
 
