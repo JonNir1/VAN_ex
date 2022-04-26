@@ -2,24 +2,33 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
+import random
+
+from typing import Optional
 
 import config as c
 import utils as u
-from models.directions import Side
-from models.frame import Frame
+
+from models.directions import Side, Position
 from models.camera import Camera
-from logic.triangulation_logic import TriangulationLogic
+from models.frame import Frame
+from models.match import FrameMatch, MutualMatch
+from logic.keypoints_matching import detect_and_match, match_between_frames
+from logic.triangulation import triangulate
+from logic.pnp import compute_front_cameras
+from logic.ransac import Ransac
 
 
-K, M1, M2 = u.read_cameras()
-cam_left = Camera(0, Side.LEFT, K, M1)
-cam_right = Camera(0, Side.RIGHT, K, M2)
-frame = Frame(0)
 
-tri = TriangulationLogic(frame, cam_left, cam_right)
-cloud = tri.match_and_triangulate()
+left_cam0, right_cam0 = Camera.read_first_cameras()
 
-print(cam_left)
+frame0 = Frame(0)
+frame1 = Frame(1)
+
+cons, non_cons = match_between_frames(frame0, frame1)
+
+ransac = Ransac()
+l_cam1, r_cam1, supporters = ransac.run(cons, left_cam0, right_cam0, True)
 
 
 

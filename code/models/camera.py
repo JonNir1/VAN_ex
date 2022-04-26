@@ -1,5 +1,7 @@
 import numpy as np
 
+import config as c
+from utils import read_cameras
 from models.directions import Side
 
 
@@ -9,6 +11,13 @@ class Camera:
     A camera has its intrinsic 3x3 matrix (K), and a 3x4 extrinsic matrix ([R|t]),
     comprised of a 3x3 rotation matrix (R) and a 3x1 translation vector (t)
     """
+
+    @classmethod
+    def read_first_cameras(cls):
+        K, M_left, M_right = read_cameras()
+        left_cam = Camera(0, Side.LEFT, K, M_left)
+        right_cam = Camera(0, Side.RIGHT, K, M_right)
+        return left_cam, right_cam
 
     def __init__(self, idx: int, side: Side,
                  intrinsic_mat: np.ndarray, extrinsic_mat: np.ndarray):
@@ -25,11 +34,19 @@ class Camera:
     def extrinsic_matrix(self) -> np.ndarray:
         return self._extrinsic_matrix
 
-    @extrinsic_matrix.setter
-    def extrinsic_matrix(self, rotation_matrix: np.ndarray, translation_vector: np.ndarray):
-        r = self.__verify_matrix(rotation_matrix, 3, 3, "Rotation")
-        t = self.__verify_vector(translation_vector, 3, "Translation")
-        self._extrinsic_matrix = np.hstack([r, t])
+    def project_3d_points(self, points: np.ndarray) -> np.ndarray:
+        # returns a 2xN array of the projected points onto the Camera's plane
+        assert points.shape[0] == 3 or points.shape[1] == 3, \
+            f"Must provide a 3D points matrix, input has shape {points.shape}"
+        if points.shape[0] != 3:
+            points = points.T
+
+        K = self._intrinsic_matrix
+        R = self.get_rotation_matrix()
+        t = self.get_translation_vector()
+        projections = K @ (R @ points + t)  # non normalized homogeneous coordinates of shape 3xN
+        hom_coordinates = projections / (projections[2] + c.Epsilon)  # add epsilon to avoid 0 division
+        return hom_coordinates[:2]  # return only first 2 rows (x,y coordinates)
 
     def calculate_projection_matrix(self) -> np.ndarray:
         # returns a 3x4 ndarray that maps a 3D point ro its corresponding 2D point on the camera plain
@@ -44,6 +61,12 @@ class Camera:
         return self.__verify_vector(t, 3, "Translation")
 
     @staticmethod
+    def calculate_extrinsic_matrix(rotation_matrix: np.ndarray, translation_vector: np.ndarray) -> np.ndarray:
+        r = Camera.__verify_matrix(rotation_matrix, 3, 3, "Rotation")
+        t = Camera.__verify_vector(translation_vector, 3, "Translation")
+        return np.hstack([r, t])
+
+    @staticmethod
     def __verify_matrix(mat: np.ndarray, num_rows: int, num_cols: int, matrix_name: str):
         if not isinstance(mat, np.ndarray):
             raise TypeError(f"{matrix_name} Matrix should be a numpy array")
@@ -54,9 +77,9 @@ class Camera:
     @staticmethod
     def __verify_vector(vec: np.ndarray, length: int, vec_name: str):
         if not isinstance(vec, np.ndarray):
-            raise TypeError(f"{vec_name} Matrix should be a numpy array")
-        if vec.shape != (length,) or vec.shape != (length, 1):
-            raise ValueError(f"{vec_name} Matrix shape should be {(length, 1)}, not {vec.shape}")
+            raise TypeError(f"{vec_name} Vector should be a numpy array")
+        if len(vec) != length:
+            raise ValueError(f"{vec_name} Vector shape should be of length {length} , not {len(vec)}")
         return vec.reshape((length, 1))
 
     def __str__(self):

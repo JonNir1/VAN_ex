@@ -33,7 +33,7 @@ def read_cameras():
       k - Intrinsic camera matrix
       m1, m2 - Extrinsic camera matrix (left, right)
     """
-    with open(os.path.join(c.DATA_PATH, 'calib.txt')) as f:
+    with open(os.path.join(c.DATA_PATH, 'calib.txt'), "r") as f:
         l1 = f.readline().split()[1:]  # skip first token
         l2 = f.readline().split()[1:]  # skip first token
     l1 = [float(i) for i in l1]
