@@ -34,3 +34,15 @@ class Track:
     def __str__(self):
         return f"Track{self._id}"
 
+    def __eq__(self, other):
+        if not isinstance(other, Track):
+            return False
+        get_id_attr = getattr(other, 'get_id', None)
+        if get_id_attr is None:
+            return False
+        if not callable(get_id_attr):
+            return False
+        return self._id == other.get_id()
+
+    def __hash__(self):
+        return hash(str(self))

@@ -36,7 +36,7 @@ class Ransac:
                                                                      actual_projections_fr, verbose)
         elapsed = time.time() - start
         if verbose:
-            print(f"Completed RANSAC in {elapsed:.2f} seconds\n\tNumber of Supporters: {len(supporting_matches)}")
+            print(f"Completed RANSAC in {elapsed:.2f} seconds\n\tNumber of Supporters: {len(supporting_matches)}\n")
         return fl_cam, fr_cam, supporting_matches
 
     def _find_supporters_subset(self, mutual_matches: list[MutualMatch], bl_cam: Camera, br_cam: Camera,

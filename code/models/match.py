@@ -3,6 +3,7 @@ import numpy as np
 from abc import ABCMeta, ABC, abstractmethod
 from typing import NamedTuple
 
+import config as c
 from models.directions import Side, Position
 
 # TODO: make this work with IMatch as well
@@ -39,6 +40,19 @@ class FrameMatch(NamedTuple):
         # returns a 2x2 array where each row is a keypoint and each col is a coordinate (X, Y)
         return np.array([self.left_keypoint.pt, self.right_keypoint.pt])
 
+    def __eq__(self, other):
+        if not isinstance(other, FrameMatch):
+            return False
+        if self.left_keypoint.pt != other.left_keypoint.pt:
+            return False
+        if self.left_keypoint.angle != other.left_keypoint.angle:
+            return False
+        if self.right_keypoint.pt != other.right_keypoint.pt:
+            return False
+        if abs(self.right_keypoint.angle - other.right_keypoint.angle) > c.Epsilon:
+            return False
+        return True
+
 
 class MutualMatch(NamedTuple):
 
@@ -59,4 +73,13 @@ class MutualMatch(NamedTuple):
         back_pixels = self.get_frame_match(Position.BACK).get_pixels()
         front_pixels = self.get_frame_match(Position.FRONT).get_pixels()
         return np.vstack([back_pixels, front_pixels])
+
+    def __eq__(self, other):
+        if not isinstance(other, MutualMatch):
+            return False
+        if self.back_frame_match != other.back_frame_match:
+            return False
+        if self.front_frame_match != other.front_frame_match:
+            return False
+        return True
 

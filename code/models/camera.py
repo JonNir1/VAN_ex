@@ -1,7 +1,7 @@
+import os
 import numpy as np
 
 import config as c
-from utils import read_cameras
 from models.directions import Side
 
 
@@ -12,9 +12,24 @@ class Camera:
     comprised of a 3x3 rotation matrix (R) and a 3x1 translation vector (t)
     """
 
-    @classmethod
-    def read_first_cameras(cls):
-        K, M_left, M_right = read_cameras()
+    @staticmethod
+    def read_first_cameras():
+        """
+        Load camera matrices from the KITTY dataset
+        Returns 2 Camera objects with the following matrices:
+            K - Intrinsic camera matrix
+            M_left, M_right - Extrinsic camera matrix (left, right)
+        """
+        with open(os.path.join(c.DATA_READ_PATH, 'calib.txt'), "r") as f:
+            l1 = f.readline().split()[1:]  # skip first token
+            l2 = f.readline().split()[1:]  # skip first token
+        l1 = [float(i) for i in l1]
+        m1 = np.array(l1).reshape(3, 4)
+        l2 = [float(i) for i in l2]
+        m2 = np.array(l2).reshape(3, 4)
+        K = m1[:, :3]
+        M_left = np.linalg.inv(K) @ m1
+        M_right = np.linalg.inv(K) @ m2
         left_cam = Camera(0, Side.LEFT, K, M_left)
         right_cam = Camera(0, Side.RIGHT, K, M_right)
         return left_cam, right_cam

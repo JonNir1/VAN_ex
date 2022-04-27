@@ -5,6 +5,7 @@ import cv2
 import config as c
 import utils as u
 from models.frame import Frame
+from models.matcher import Matcher
 from models.match import FrameMatch, MutualMatch
 
 MaxVerticalDistance = 1
@@ -18,6 +19,7 @@ def detect_and_match(frame: Frame, **kwargs):
     optional params:
     $detector_name: str -> name of the detector to use, default "sift"
     $matcher_name: str -> name of the matcher to use, default "flann"
+    $cross_check: bool -> if True, perform cross-check when matching, default True
     $max_vertical_distance: positive int -> threshold for identifying bad matches
 
     returns the keypoints & their descriptors, as well as the inlier matches
@@ -26,13 +28,14 @@ def detect_and_match(frame: Frame, **kwargs):
 
     # detect keypoints in both images of the frame
     detector_name = kwargs.get("detector_name", c.DEFAULT_DETECTOR_NAME)
-    detector = u.create_detector(detector_name)
+    detector = _create_detector(detector_name)
     keypoints_left, descriptors_left = detector.detectAndCompute(img_left, None)
     keypoints_right, descriptors_right = detector.detectAndCompute(img_right, None)
 
     # find matches between images, and exclude outliers
     matcher_name = kwargs.get("matcher_name", c.DEFAULT_MATCHER_NAME)
-    matcher = u.create_matcher(matcher_name)
+    cross_check = kwargs.get("cross_check", c.SHOULD_CROSS_CHECK)
+    matcher = Matcher(matcher_name, cross_check)
     all_matches = matcher.match(descriptors_left, descriptors_right)
 
     # exclude outlier matches
@@ -54,6 +57,7 @@ def match_between_frames(back_frame: Frame, front_frame: Frame, **kwargs) -> (li
     optional params:
     $detector_name: str -> name of the detector to use, default "sift"
     $matcher_name: str -> name of the matcher to use, default "flann"
+    $cross_check: bool -> if True, perform cross-check when matching, default True
     $max_vertical_distance: positive int -> threshold for identifying bad matches
 
     Returns two lists:
@@ -63,19 +67,22 @@ def match_between_frames(back_frame: Frame, front_frame: Frame, **kwargs) -> (li
     """
     detector_name = kwargs.get("detector_name", c.DEFAULT_DETECTOR_NAME)
     matcher_name = kwargs.get("matcher_name", c.DEFAULT_MATCHER_NAME)
+    cross_check = kwargs.get("cross_check", c.SHOULD_CROSS_CHECK)
     max_vertical_distance = kwargs.get("max_vertical_distance", MaxVerticalDistance)
 
     # detect keypoints and extract inliers for each Frame separately
     kps_back_left, desc_back_left, kps_back_right, _, back_matches = detect_and_match(back_frame,
                                                                                       detector_name=detector_name,
                                                                                       matcher_name=matcher_name,
+                                                                                      cross_check=cross_check,
                                                                                       max_vertical_distance=max_vertical_distance)
     kps_front_left, desc_front_left, kps_front_right, _, front_matches = detect_and_match(front_frame,
                                                                                           detector_name=detector_name,
                                                                                           matcher_name=matcher_name,
+                                                                                          cross_check=cross_check,
                                                                                           max_vertical_distance=max_vertical_distance)
     # extract matches between frames
-    matcher = u.create_matcher(matcher_name)
+    matcher = Matcher(matcher_name, cross_check)
     between_frame_matches = matcher.match(desc_back_left, desc_front_left)
 
     # find keypoints that are matched within both Frame and between Frames:
@@ -131,4 +138,14 @@ def _find_within_frame_matches(between_frames_match, back_matches_left_indices: 
         # front_matches doesn't contain this keypoint - this is not a consensus match
         index_of_front_kp_in_front_matches = None
     return index_of_back_kp_in_back_match, index_of_front_kp_in_front_matches
+
+
+def _create_detector(detector_name: str):
+    # create a cv2 feature detector
+    if detector_name == "orb" or detector_name == "ORB":
+        return cv2.ORB_create()
+    if detector_name == "sift" or detector_name == "SIFT":
+        return cv2.SIFT_create()
+    raise NotImplementedError("We currently do not " +
+                              f"support the {detector_name} detector")
 
