@@ -12,7 +12,7 @@ from logic.ransac import Ransac
 from logic.updater import Updater
 
 
-def estimate_trajectory(num_frames: int = Frame.MaxIndex + 1, verbose=False) -> tuple[list[Frame], np.ndarray]:
+def estimate_trajectory(num_frames: int = Frame.MaxIndex + 1, verbose=False) -> tuple[list[Frame], np.ndarray, float]:
     start_time, minutes_counter = time.time(), 0
     max_frame_count = Frame.MaxIndex + 1
     assert 1 < num_frames <= max_frame_count, f"Must process between 2 and {max_frame_count} frames"
@@ -48,7 +48,7 @@ def estimate_trajectory(num_frames: int = Frame.MaxIndex + 1, verbose=False) -> 
     if verbose:
         total_minutes = total_elapsed / 60
         print(f"Finished running for all tracking-pairs. Total runtime: {total_minutes:.2f} minutes")
-    return all_frames, estimated_trajectory
+    return all_frames, estimated_trajectory, total_elapsed
 
 
 def _process_first_frame():
