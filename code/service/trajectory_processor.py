@@ -63,7 +63,7 @@ def _process_first_frame():
         kp_r = KeyPoint.from_cv2_keypoint(cv2_kps_right[inlier.trainIdx])
         match = FrameMatch(kp_l, kp_r)
         tr = Track(0)
-        first_frame.add_track(tr, match)
+        first_frame.add_track(tr.get_id(), match)
     return first_frame
 
 

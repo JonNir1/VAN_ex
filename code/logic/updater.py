@@ -27,20 +27,11 @@ class Updater:
         for i, con in enumerate(self._consensus_matches):
             back_match = con.get_frame_match(Position.BACK)
             front_match = con.get_frame_match(Position.FRONT)
-            trk = self._back_frame.find_track_for_match(back_match)
-            assert trk is not None, \
+            trk_id = self._back_frame.find_track_id_for_match(back_match)
+            assert trk_id is not None, \
                 f"Consensus Match #{i} between {str(self._back_frame)} and {str(self._front_frame)}" + \
                 "has no associated Track"
-            self._front_frame.add_track(trk, front_match)
-            trk.extend()
-
-            # try:
-            #     self._front_frame.add_track(tr, fm)
-            # except AssertionError:
-            #     self._front_frame.get_id()
-            #     print(f"AssertionError thrown when updating {str(self._front_frame)} with {str(tr)}")
-
-
+            self._front_frame.add_track(trk_id, front_match)
 
     def _create_new_tracks(self, non_consensus_front_matches: list[FrameMatch]):
         """
@@ -50,7 +41,7 @@ class Updater:
         front_frame_idx = self._front_frame.id
         for m in non_consensus_front_matches:
             tr = Track(start_frame_idx=front_frame_idx)
-            self._front_frame.add_track(tr, m)
+            self._front_frame.add_track(tr.get_id(), m)
 
     def _update_front_cameras(self, left_cam: Camera, right_cam: Camera):
         self._front_frame.left_camera = left_cam
