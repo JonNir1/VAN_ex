@@ -1,10 +1,9 @@
-import cv2
 import numpy as np
-from abc import ABCMeta, ABC, abstractmethod
+# from abc import ABCMeta, ABC, abstractmethod
 from typing import NamedTuple
 
-import config as c
 from models.directions import Side, Position
+from models.keypoint import KeyPoint
 
 # TODO: make this work with IMatch as well
 # class NT(NamedTuple):
@@ -28,10 +27,10 @@ from models.directions import Side, Position
 
 class FrameMatch(NamedTuple):
 
-    left_keypoint: cv2.KeyPoint
-    right_keypoint: cv2.KeyPoint
+    left_keypoint: KeyPoint
+    right_keypoint: KeyPoint
 
-    def get_keypoint(self, s: Side) -> cv2.KeyPoint:
+    def get_keypoint(self, s: Side) -> KeyPoint:
         if s == Side.LEFT:
             return self.left_keypoint
         return self.right_keypoint
@@ -43,15 +42,13 @@ class FrameMatch(NamedTuple):
     def __eq__(self, other):
         if not isinstance(other, FrameMatch):
             return False
-        if self.left_keypoint.pt != other.left_keypoint.pt:
-            return False
-        if self.left_keypoint.angle != other.left_keypoint.angle:
-            return False
-        if self.right_keypoint.pt != other.right_keypoint.pt:
-            return False
-        if abs(self.right_keypoint.angle - other.right_keypoint.angle) > c.Epsilon:
-            return False
-        return True
+        return self.left_keypoint == other.left_keypoint and self.right_keypoint == other.right_keypoint
+
+    def __str__(self):
+        return f"FM({str(self.left_keypoint)} - {str(self.right_keypoint)})"
+
+    def __hash__(self):
+        hash((self.left_keypoint, self.right_keypoint))
 
 
 class MutualMatch(NamedTuple):
@@ -64,7 +61,7 @@ class MutualMatch(NamedTuple):
             return self.back_frame_match
         return self.front_frame_match
 
-    def get_keypoint(self, s: Side, p: Position) -> cv2.KeyPoint:
+    def get_keypoint(self, s: Side, p: Position) -> KeyPoint:
         frame_match = self.get_frame_match(p)
         return frame_match.get_keypoint(s)
 
@@ -77,9 +74,10 @@ class MutualMatch(NamedTuple):
     def __eq__(self, other):
         if not isinstance(other, MutualMatch):
             return False
-        if self.back_frame_match != other.back_frame_match:
-            return False
-        if self.front_frame_match != other.front_frame_match:
-            return False
-        return True
+        return self.back_frame_match == other.back_frame_match and self.front_frame_match == other.front_frame_match
 
+    def __str__(self):
+        return f"MM({str(self.back_frame_match)} | {str(self.front_frame_match)})"
+
+    def __hash__(self):
+        return hash((self.back_frame_match, self.front_frame_match))

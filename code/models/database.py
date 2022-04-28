@@ -14,6 +14,13 @@ class DataBase:
     @staticmethod
     def build_database(data: list[Frame]) -> pd.DataFrame:
         # TODO: make this more efficient!
+        if len(data) == 0:
+            # return empty DataFrame with correct columns & index
+            df = pd.DataFrame(columns=[DataBase.X_LEFT, DataBase.X_RIGHT, DataBase.Y,
+                                         DataBase.FRAMEIDX, DataBase.TRACKIDX])
+            df.set_index([DataBase.FRAMEIDX, DataBase.TRACKIDX], inplace=True)
+            return df
+
         mini_dfs = {}
         for fr in data:
             fr_idx = fr.get_id()

@@ -3,6 +3,7 @@ import time
 import numpy as np
 
 from models.directions import Position
+from models.keypoint import KeyPoint
 from models.frame import Frame
 from models.camera import Camera
 from models.match import FrameMatch
@@ -56,10 +57,10 @@ def _process_first_frame():
     left_cam0, right_cam0 = Camera.read_first_cameras()
     first_frame.left_camera = left_cam0
     first_frame.right_camera = right_cam0
-    kps_left, _, kps_right, _, inliers = detect_and_match(first_frame, cross_check=False)
-    for inlier in inliers:
-        kp_l = kps_left[inlier.queryIdx]
-        kp_r = kps_right[inlier.trainIdx]
+    cv2_kps_left, _, cv2_kps_right, _, cv2_inliers = detect_and_match(first_frame, cross_check=False)
+    for inlier in cv2_inliers:
+        kp_l = KeyPoint.from_cv2_keypoint(cv2_kps_left[inlier.queryIdx])
+        kp_r = KeyPoint.from_cv2_keypoint(cv2_kps_right[inlier.trainIdx])
         match = FrameMatch(kp_l, kp_r)
         tr = Track(0)
         first_frame.add_track(tr, match)

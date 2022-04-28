@@ -47,7 +47,7 @@ class Ransac:
             using a minimal-set (default size 4) of MutualMatch objects.
         In each iteration sample 4 MutualMatch objects and calculate front-left and front-right cameras based on them.
             Then, project all 3D-points to the cameras' planes and see how many are projected within a given distance
-            from their real cv2.Keypoint pixel (default distance 2). Those points are considered supporters.
+            from their real cv2.KeyPoint pixel (default distance 2). Those points are considered supporters.
         Returns the indices of supporting MutualMatches for the best model that was found.
         """
         if verbose:

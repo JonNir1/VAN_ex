@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional
 
 from models.camera import Camera
-from models.match import FrameMatch, MutualMatch
+from models.match import MutualMatch
 from models.directions import Side, Position
 from logic.triangulation import triangulate
 

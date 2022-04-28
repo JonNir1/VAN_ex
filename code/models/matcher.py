@@ -8,8 +8,8 @@ class Matcher:
         self.type = matcher_name.upper()
         self._matcher = self.__create_matcher()
 
-    def match(self, queryDesc, trainDesc):
-        return self._matcher.match(queryDesc, trainDesc)
+    def match(self, query_desc, train_desc):
+        return self._matcher.match(query_desc, train_desc)
 
     def __create_matcher(self):
         # create a cv2.matcher object

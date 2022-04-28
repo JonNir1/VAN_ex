@@ -17,7 +17,11 @@ from logic.db_adapter import DBAdapter
 
 start = time.time()
 real_traj = u.read_trajectory()
-all_frames, est_traj, _ = estimate_trajectory(verbose=False)
+# all_frames, est_traj, _ = estimate_trajectory(verbose=False)
+
+real_traj = real_traj[:, :50]
+all_frames, est_traj, _ = estimate_trajectory(num_frames=50, verbose=True)
+
 error = np.linalg.norm(est_traj - real_traj, ord=2, axis=0)
 elapsed = time.time() - start
 print(f"FINISHED PROCESSING TRAJECTORY IN {(elapsed / 60):.2f} MINUTES")

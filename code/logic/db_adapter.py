@@ -50,7 +50,6 @@ class DBAdapter:
                                     [DataBase.X_LEFT, DataBase.X_RIGHT, DataBase.Y]])
 
     def to_pickle(self, filename: str = None) -> bool:
-        # TODO: can't pickle a CV2.Keypoint object
         if not os.path.isdir(c.DATA_WRITE_PATH):
             os.makedirs(c.DATA_WRITE_PATH)
         filename = filename if filename is not None else f"db_{datetime.now().strftime('%d%m%Y_%H%M')}"
@@ -58,6 +57,11 @@ class DBAdapter:
         with open(fullpath, 'wb') as f:
             pkl.dump(self.db, f, protocol=-1)
         return True
+
+    def __eq__(self, other):
+        if not isinstance(other, DBAdapter):
+            return False
+        return (self.db == other.db).all().all()
 
 
 

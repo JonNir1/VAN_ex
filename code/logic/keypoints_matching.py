@@ -4,6 +4,7 @@ import cv2
 
 import config as c
 import utils as u
+from models.keypoint import KeyPoint
 from models.frame import Frame
 from models.matcher import Matcher
 from models.match import FrameMatch, MutualMatch
@@ -87,36 +88,23 @@ def match_between_frames(back_frame: Frame, front_frame: Frame, **kwargs) -> (li
 
     # find keypoints that are matched within both Frame and between Frames:
     mutual_matches_cv2 = _find_mutual_matches(back_matches, front_matches, between_frame_matches)
-    back_mutual_matches = [FrameMatch(kps_back_left[back_match_cv2.queryIdx],
-                                      kps_back_right[back_match_cv2.trainIdx])
-                           for (back_match_cv2, _) in mutual_matches_cv2]
-    front_mutual_matches = [FrameMatch(kps_front_left[front_match_cv2.queryIdx],
-                                       kps_front_right[front_match_cv2.trainIdx])
-                            for (_, front_match_cv2) in mutual_matches_cv2]
-    mutual_matches = [MutualMatch(back_match, front_match)
-                      for (back_match, front_match) in zip(back_mutual_matches, front_mutual_matches)]
+    mutual_matches = _convert_cv2_mutual_matches(kps_back_left, kps_back_right, kps_front_left, kps_front_right, mutual_matches_cv2)
 
     # extract front-matches that don't have a corresponding back-match -> these are new Tracks
-    front_matches_with_back_match = [fm for (bm, fm) in mutual_matches_cv2]
-    front_keypoints_without_back_match = [FrameMatch(kps_front_left[m.queryIdx], kps_front_right[m.trainIdx])
-                                          for m in front_matches if m not in front_matches_with_back_match]
-    return mutual_matches, front_keypoints_without_back_match
+    all_front_frame_matches = [_convert_cv2_match(kps_front_left, kps_front_right, cv2_fm) for cv2_fm in front_matches]
+    front_frame_matches_with_back_match = [fm for (bm, fm) in mutual_matches_cv2]
+    front_frame_matches_without_back_match = [fm for fm in all_front_frame_matches if fm not in front_frame_matches_with_back_match]
+    return mutual_matches, front_frame_matches_without_back_match
 
 
-def _find_mutual_matches(back_matches: list, front_matches: list,
-                         between_frames_matches: list) -> list[tuple[cv2.DMatch, cv2.DMatch]]:
-    # find $front_matches that have a $back_match that corresponds to them (via a $between_match)
-    mutual_matches = []
-    back_matches_left_idxs = [m.queryIdx for m in back_matches]
-    front_matches_left_idxs = [m.queryIdx for m in front_matches]
-    for match_between in between_frames_matches:
-        try:
-            back_match_idx = back_matches_left_idxs.index(match_between.queryIdx)
-            front_match_idx = front_matches_left_idxs.index(match_between.trainIdx)
-            mutual_matches.append((back_matches[back_match_idx], front_matches[front_match_idx]))
-        except ValueError:
-            continue
-    return mutual_matches
+def _create_detector(detector_name: str):
+    # create a cv2 feature detector
+    if detector_name == "orb" or detector_name == "ORB":
+        return cv2.ORB_create()
+    if detector_name == "sift" or detector_name == "SIFT":
+        return cv2.SIFT_create()
+    raise NotImplementedError("We currently do not " +
+                              f"support the {detector_name} detector")
 
 
 def _find_within_frame_matches(between_frames_match, back_matches_left_indices: list,
@@ -140,12 +128,45 @@ def _find_within_frame_matches(between_frames_match, back_matches_left_indices: 
     return index_of_back_kp_in_back_match, index_of_front_kp_in_front_matches
 
 
-def _create_detector(detector_name: str):
-    # create a cv2 feature detector
-    if detector_name == "orb" or detector_name == "ORB":
-        return cv2.ORB_create()
-    if detector_name == "sift" or detector_name == "SIFT":
-        return cv2.SIFT_create()
-    raise NotImplementedError("We currently do not " +
-                              f"support the {detector_name} detector")
+def _find_mutual_matches(back_matches: list, front_matches: list,
+                         between_frames_matches: list) -> list[tuple[cv2.DMatch, cv2.DMatch]]:
+    # find $front_matches that have a $back_match that corresponds to them (via a $between_match)
+    mutual_matches = []
+    back_matches_left_idxs = [m.queryIdx for m in back_matches]
+    front_matches_left_idxs = [m.queryIdx for m in front_matches]
+    for match_between in between_frames_matches:
+        try:
+            back_match_idx = back_matches_left_idxs.index(match_between.queryIdx)
+            front_match_idx = front_matches_left_idxs.index(match_between.trainIdx)
+            mutual_matches.append((back_matches[back_match_idx], front_matches[front_match_idx]))
+        except ValueError:
+            continue
+    return mutual_matches
+
+
+def _convert_cv2_match(left_kps_cv2: list[cv2.KeyPoint], right_kps_cv2: list[cv2.KeyPoint],
+                       match: cv2.DMatch) -> FrameMatch:
+    # converts a cv2.DMatch object and underlying cv2.KeyPoint objects, to serializable FrameMatch and Keypoint objects
+    kp_l = KeyPoint.from_cv2_keypoint(left_kps_cv2[match.queryIdx])
+    kp_r = KeyPoint.from_cv2_keypoint(right_kps_cv2[match.trainIdx])
+    return FrameMatch(kp_l, kp_r)
+
+
+def _convert_cv2_mutual_matches(bl_cv2_kps: list[cv2.KeyPoint], br_cv2_kps: list[cv2.KeyPoint],
+                                fl_cv2_kps: list[cv2.KeyPoint], fr_cv2_kps: list[cv2.KeyPoint],
+                                cv2_mutual_matches: list[tuple[cv2.DMatch, cv2.DMatch]]) -> list[MutualMatch]:
+    # Converts the CV2 keypoints into our serializable KeyPoint objects
+    # and creates FrameMatch and MutualMatch objects from the cv2.DMatch objects
+    mutual_matches = []
+    for cv2_mut_match in cv2_mutual_matches:
+        back_cv2_match, front_cv2_match = cv2_mut_match
+        back_frame_match = _convert_cv2_match(bl_cv2_kps, br_cv2_kps, back_cv2_match)
+        front_frame_match = _convert_cv2_match(fl_cv2_kps, fr_cv2_kps, front_cv2_match)
+        mutual_matches.append(MutualMatch(back_frame_match, front_frame_match))
+    return mutual_matches
+
+
+
+
+
 
