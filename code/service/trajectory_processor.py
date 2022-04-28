@@ -12,6 +12,8 @@ from logic.keypoints_matching import detect_and_match, match_between_frames
 from logic.ransac import Ransac
 from logic.updater import Updater
 
+# TODO: make this a class with TrackCounter as an inner field (for removing the Track object)
+
 
 def estimate_trajectory(num_frames: int = Frame.MaxIndex + 1, verbose=False) -> tuple[list[Frame], np.ndarray, float]:
     start_time, minutes_counter = time.time(), 0

@@ -5,6 +5,8 @@ from models.match import FrameMatch, MutualMatch
 from models.track import Track
 from models.camera import Camera
 
+# TODO: create new Tracks without actually instantiating a Track object (to remove the Track object type)
+
 
 class Updater:
 
