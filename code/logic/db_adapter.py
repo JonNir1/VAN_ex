@@ -35,10 +35,15 @@ class DBAdapter:
     def get_track_lengths(self) -> pd.Series:
         return self.db.groupby(level=DataBase.TRACKIDX).size()
 
-    def get_track_idx_with_length(self, min_length: int) -> int:
+    def sample_track_idx_with_length(self, min_length: int) -> int:
         track_lengths = self.get_track_lengths()
         track_idx = (track_lengths[track_lengths >= min_length]).sample(1)
         return track_idx
+
+    def get_shared_tracks(self, frame_idx1: int, frame_idx2: int) -> pd.Series:
+        idx1_tracks = self.db.index[self.db.index.get_level_values(DataBase.FRAMEIDX) == frame_idx1].droplevel(DataBase.FRAMEIDX)
+        idx2_tracks = self.db.index[self.db.index.get_level_values(DataBase.FRAMEIDX) == frame_idx2].droplevel(DataBase.FRAMEIDX)
+        return idx1_tracks.intersection(idx2_tracks).to_series().reset_index(drop=True)
 
     def get_coordinates(self, frame_idx: int, track_idx: int) -> np.ndarray:
         return np.array(self.db.loc[(frame_idx, track_idx),
