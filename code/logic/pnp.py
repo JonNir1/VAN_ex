@@ -25,7 +25,7 @@ def compute_front_cameras(mutual_matches: list[MutualMatch], bl_cam: Camera, br_
     fl_cam = _compute_front_left_camera(mutual_matches, bl_cam, br_cam)
     if fl_cam is None:
         return None, None
-    fr_cam = _compute_front_right_camera(fl_cam)
+    fr_cam = fl_cam.calculate_right_camera()
     return fl_cam, fr_cam
 
 
@@ -41,17 +41,4 @@ def _compute_front_left_camera(mutual_matches: list[MutualMatch], bl_cam: Camera
         ext_mat = Camera.calculate_extrinsic_matrix(cv2.Rodrigues(rotation)[0], translation)
         return Camera(idx=next_idx, side=Side.LEFT, intrinsic_mat=K, extrinsic_mat=ext_mat)
     return None
-
-
-def _compute_front_right_camera(fl_cam: Camera) -> Camera:
-    _, first_right_cam = Camera.read_first_cameras()
-    right_rot0 = first_right_cam.get_rotation_matrix()
-    right_trans0 = first_right_cam.get_translation_vector()
-    front_left_rot = fl_cam.get_rotation_matrix()
-    front_left_trans = fl_cam.get_translation_vector()
-
-    front_right_Rot = right_rot0 @ front_left_rot
-    front_right_trans = right_rot0 @ front_left_trans + right_trans0
-    ext_mat = Camera.calculate_extrinsic_matrix(front_right_Rot, front_right_trans)
-    return Camera(idx=fl_cam.idx, side=Side.RIGHT, intrinsic_mat=fl_cam.intrinsic_matrix, extrinsic_mat=ext_mat)
 
