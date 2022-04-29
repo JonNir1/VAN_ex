@@ -17,11 +17,7 @@ from logic.db_adapter import DBAdapter
 
 start = time.time()
 real_traj = u.read_trajectory()
-# all_frames, est_traj, _ = estimate_trajectory(verbose=False)
-
-real_traj = real_traj[:, :50]
-all_frames, est_traj, _ = estimate_trajectory(num_frames=50, verbose=True)
-
+all_frames, est_traj, _ = estimate_trajectory(verbose=False)
 error = np.linalg.norm(est_traj - real_traj, ord=2, axis=0)
 elapsed = time.time() - start
 print(f"FINISHED PROCESSING TRAJECTORY IN {(elapsed / 60):.2f} MINUTES")
@@ -75,10 +71,23 @@ print(f"\tFrame Density:\tmean={tracks_per_frame.mean():.2f}\tmin={tracks_per_fr
 #         display track          #
 ##################################
 
+long_track, length = dba.sample_track_idx_with_length(10, 14)
+track_data = dba.db.xs(long_track, level=DataBase.TRACKIDX)
+frame_ids = track_data.index.get_level_values(DataBase.FRAMEIDX).tolist()
 
-def display_track(dbadapter: DBAdapter, min_len: int = 10):
-    # TODO
-    pass
+fig, axes = plt.subplots(len(frame_ids), 2)
+fig.suptitle(f"Frames {min(frame_ids)}-{max(frame_ids)}\nTrack{long_track}")
+for i, frame_idx in enumerate(frame_ids):
+    img_l, img_r = u.read_image_pair(frame_idx)
+    x_l, x_r, y, _ = track_data.xs(frame_idx)
+    axes[i][0].imshow(img_l, cmap='gray', vmin=0, vmax=255)
+    axes[i][0].scatter(x_l, y, s=4, c='orange')
+    axes[i][0].axis('off')
+    axes[i][1].imshow(img_r, cmap='gray', vmin=0, vmax=255)
+    axes[i][1].scatter(x_r, y, s=4, c='orange')
+    axes[i][1].axis('off')
+plt.subplots_adjust(wspace=-0.65, hspace=0.3, top=0.9, bottom=0.02)
+plt.show()
 
 
 #######################################
@@ -87,11 +96,10 @@ def display_track(dbadapter: DBAdapter, min_len: int = 10):
 #######################################
 
 
-def calculate_connectivity_graph(dbadapter: DBAdapter, shift: int = 1) -> pd.Series:
+def calculate_connectivity(dbadapter: DBAdapter, shift: int = 1) -> pd.Series:
     # For all Frames, returns the amount of shared tracks between any Frame i and frame i+shift
     frame_indices = dbadapter.db.index.get_level_values(DataBase.FRAMEIDX)
-    last_frame_to_check = frame_indices.max() - shift
-
+    last_frame_to_check = frame_indices.max() - shift + 1
     shared_tracks_count = dict()
     for fr_idx in range(last_frame_to_check):
         try:
@@ -101,16 +109,19 @@ def calculate_connectivity_graph(dbadapter: DBAdapter, shift: int = 1) -> pd.Ser
     return pd.Series(shared_tracks_count, name=f"Shared_Tracks_(i+{shift})")
 
 
-one_connectivity = calculate_connectivity_graph(dba, shift=1)
-ax = one_connectivity.plot()
+one_connectivity = calculate_connectivity(dba, shift=1)
+ax = one_connectivity.plot.line(color='b')
+ax.set_title("Connectivity")
+ax.set_xlabel("FrameIdx")
+ax.set_ylabel("Outgoing Tracks")
 plt.show()
-
+print(f"Mean Connectivity: {one_connectivity.mean() :.2f}")
 
 ######################################
 #           Question 4.5             #
 #          % Inliers Graph           #
 ######################################
-
+# TODO
 
 
 ###########################################
@@ -118,7 +129,40 @@ plt.show()
 #         Track Length Histogram          #
 ###########################################
 
-ax = track_lengths.plot(kind='hist')
+ax = track_lengths.plot.hist()
+ax.set_title("Track Length Histogram")
+ax.set_xlabel("Track Length")
+ax.set_ylabel("Count")
 plt.show()
+
+#########################################
+#            Question 4.7               #
+#          Reprojection Error           #
+#########################################
+
+from models.directions import Side
+from models.camera import Camera
+from logic.triangulation import triangulate
+
+# TODO: this should be it's own class
+
+cam0_l, cam0_r = Camera.read_first_cameras()
+K = cam0_l.intrinsic_matrix
+Rs, ts = u.read_poses()
+
+long_track, length = dba.sample_track_idx_with_length(10, 14)
+track_data = dba.db.xs(long_track, level=DataBase.TRACKIDX)
+frame_ids = track_data.index.get_level_values(DataBase.FRAMEIDX).tolist()
+last_frame_id = max(frame_ids)
+_, _, _, frame = track_data.xs(last_frame_id)
+frame_match = frame.get_match(track_id=long_track)
+
+last_cam_left = Camera(idx=last_frame_id, side=Side.LEFT, intrinsic_mat=K,
+                       extrinsic_mat=Camera.calculate_extrinsic_matrix(Rs[last_frame_id], ts[last_frame_id]))
+last_cam_right = last_cam_left.calculate_right_camera()
+point_3d = triangulate(matches=[frame_match], left_cam=last_cam_left, right_cam=last_cam_right)
+
+# TODO - project on back images and calculate errs
+
 
 

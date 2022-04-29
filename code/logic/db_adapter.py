@@ -35,10 +35,17 @@ class DBAdapter:
     def get_track_lengths(self) -> pd.Series:
         return self.db.groupby(level=DataBase.TRACKIDX).size()
 
-    def sample_track_idx_with_length(self, min_length: int) -> int:
+    def sample_track_idx_with_length(self, min_len: int = 10, max_len: int = None) -> tuple[int, int]:
         track_lengths = self.get_track_lengths()
-        track_idx = (track_lengths[track_lengths >= min_length]).sample(1)
-        return track_idx
+        if max_len is None:
+            relevant_indices = track_lengths >= min_len
+        else:
+            assert max_len >= min_len, f"argument $max_len ({max_len}) must be >= to argument $min_len ({min_len})"
+            relevant_indices = (track_lengths >= min_len) & (track_lengths <= max_len)
+        track_with_len = (track_lengths[relevant_indices]).sample(1)
+        trk_idx = track_with_len.index.values[0]
+        length = track_with_len.values[0]
+        return trk_idx, length
 
     def get_shared_tracks(self, frame_idx1: int, frame_idx2: int) -> pd.Series:
         idx1_tracks = self.db.index[self.db.index.get_level_values(DataBase.FRAMEIDX) == frame_idx1].droplevel(DataBase.FRAMEIDX)

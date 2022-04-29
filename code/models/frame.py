@@ -22,6 +22,9 @@ class Frame:
     def get_id(self) -> int:
         return self.id
 
+    def get_match(self, track_id: int) -> Optional[FrameMatch]:
+        return self._tracks.get(track_id)
+
     def get_tracks(self) -> dict[int, FrameMatch]:
         return self._tracks
 
