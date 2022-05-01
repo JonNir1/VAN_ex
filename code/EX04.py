@@ -7,8 +7,11 @@ from matplotlib import pyplot as plt
 
 import utils as u
 from models.database import DataBase
-from service.trajectory_processor import estimate_trajectory
+from models.frame import Frame
+from models.matcher import Matcher
 from logic.db_adapter import DBAdapter
+from logic.keypoints_matching import detect_and_match
+from service.trajectory_processor import estimate_trajectory
 
 ###################################
 #        PRELIMINARY CHECK        #
@@ -121,8 +124,25 @@ print(f"Mean Connectivity: {one_connectivity.mean() :.2f}")
 #           Question 4.5             #
 #          % Inliers Graph           #
 ######################################
-# TODO
+# We want to show the % of tracks from the total # of back-front matches.
+# This value is not stored when estimating trajectory (it's irrelevant), so we need to compute it separately:
+match_count = dict()
+matcher = Matcher("flann", False)
+back_frame = Frame(0)
+for i in range(1, num_frames):
+    front_frame = Frame(i)
+    _, bl_desc, _, _, _ = detect_and_match(back_frame)
+    _, fl_desc, _, _, _ = detect_and_match(front_frame)
+    matches = matcher.match(bl_desc, fl_desc)
+    match_count[i - 1] = len(matches)
+    back_frame = front_frame
 
+match_count_series = pd.Series(match_count)
+track_percent = 100 * tracks_per_frame[:-1] / match_count_series
+ax = track_percent.plot.line(color='b')
+ax.set_title("% Tracks")
+ax.set_xlabel("FrameIdx")
+plt.show()
 
 ###########################################
 #              Question 4.6               #
@@ -150,7 +170,7 @@ cam0_l, cam0_r = Camera.read_first_cameras()
 K = cam0_l.intrinsic_matrix
 Rs, ts = u.read_poses()
 
-long_track, length = dba.sample_track_idx_with_length(10, 14)
+long_track, length = dba.sample_track_idx_with_length(10)
 track_data = dba.db.xs(long_track, level=DataBase.TRACKIDX)
 frame_ids = track_data.index.get_level_values(DataBase.FRAMEIDX).tolist()
 last_frame_id = max(frame_ids)
@@ -160,9 +180,24 @@ frame_match = frame.get_match(track_id=long_track)
 last_cam_left = Camera(idx=last_frame_id, side=Side.LEFT, intrinsic_mat=K,
                        extrinsic_mat=Camera.calculate_extrinsic_matrix(Rs[last_frame_id], ts[last_frame_id]))
 last_cam_right = last_cam_left.calculate_right_camera()
-point_3d = triangulate(matches=[frame_match], left_cam=last_cam_left, right_cam=last_cam_right)
+point_3d = triangulate_matches(matches=[frame_match], left_cam=last_cam_left, right_cam=last_cam_right)
 
-# TODO - project on back images and calculate errs
+errs = dict()
+for fr_idx in frame_ids:
+    x_l, x_r, y, frame = track_data.xs(fr_idx)
+    x_l_proj, y_l_proj = frame.left_camera.project_3d_points(point_3d)
+    left_err = np.power(np.power(x_l_proj - x_l, 2) + np.power(y_l_proj - y, 2), 0.5)
+    x_r_proj, y_r_proj = frame.right_camera.project_3d_points(point_3d)
+    right_err = np.power(np.power(x_r_proj - x_r, 2) + np.power(y_r_proj - y, 2), 0.5)
+    errs[fr_idx] = (left_err[0], right_err[0])
 
+errs_df = pd.DataFrame.from_dict(errs, orient='index', columns=["left_error", "right_error"])
+plt.scatter(errs_df.index, errs_df["left_error"], label="left_error")
+# plt.scatter(errs_df.index, errs_df["right_error"], label="right_error")
+plt.title("Reprojection Errors")
+plt.ylabel("FrameIdx")
+plt.ylabel("Euclidean Distance")
+plt.legend()
+plt.show()
 
 
