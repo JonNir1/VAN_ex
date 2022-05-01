@@ -12,10 +12,8 @@ import config as c
 # either load the left or right image by using the bool $is_left
 def read_single_image(idx: int, is_left: bool):
     image_name = "{:06d}.png".format(idx)
-    if is_left:
-        image_path = c.DATA_READ_PATH + '\\image_0\\' + image_name
-    else:
-        image_path = c.DATA_READ_PATH + '\\image_1\\' + image_name
+    image_dir = "image_0" if is_left else "image_1"
+    image_path = f"{c.DATA_READ_PATH}\\sequences\\00\\{image_dir}\\{image_name}"
     return cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
 
@@ -33,7 +31,7 @@ def read_first_camera_matrices():
         K - Intrinsic camera matrix
         M_left, M_right - Extrinsic camera matrix (left, right)
     """
-    with open(os.path.join(c.DATA_READ_PATH, 'calib.txt'), "r") as f:
+    with open(f"{c.DATA_READ_PATH}\\sequences\\00\\calib.txt", "r") as f:
         l1 = f.readline().split()[1:]  # skip first token
         l2 = f.readline().split()[1:]  # skip first token
     l1 = [float(i) for i in l1]
@@ -55,8 +53,7 @@ def read_poses():
         ts are 3x1 translation vectors
     """
     Rs, ts = [], []
-    file_path = os.path.join(os.getcwd(), r'dataset\poses\00.txt')
-    f = open(file_path, 'r')
+    f = open(f"{c.DATA_READ_PATH}\\poses\\00.txt", 'r')
     for i, line in enumerate(f.readlines()):
         mat = np.array(line.split(), dtype=float).reshape((3, 4))
         Rs.append(mat[:, :3])

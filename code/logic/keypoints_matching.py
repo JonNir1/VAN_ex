@@ -12,41 +12,29 @@ from models.match import FrameMatch, MutualMatch
 MaxVerticalDistance = 1
 
 
-def detect_and_match(frame: Frame, **kwargs):
+def detect_and_match(frame: Frame):
     """
     Detects keypoints and extracts matches between two images of a single Frame.
     A match is only extracted if the two keypoints have a horizontal distance below a given number of pixels.
 
-    optional params:
-    $detector_name: str -> name of the detector to use, default "sift"
-    $matcher_name: str -> name of the matcher to use, default "flann"
-    $cross_check: bool -> if True, perform cross-check when matching, default True
-    $max_vertical_distance: positive int -> threshold for identifying bad matches
-
-    returns the keypoints & their descriptors, as well as the inlier matches
+    Returns the keypoints & their descriptors, as well as the inlier matches
     """
     img_left, img_right = u.read_image_pair(frame.get_id())
 
     # detect keypoints in both images of the frame
-    detector_name = kwargs.get("detector_name", c.DEFAULT_DETECTOR_NAME)
-    detector = _create_detector(detector_name)
-    keypoints_left, descriptors_left = detector.detectAndCompute(img_left, None)
-    keypoints_right, descriptors_right = detector.detectAndCompute(img_right, None)
+    keypoints_left, descriptors_left = c.DETECTOR.detectAndCompute(img_left, None)
+    keypoints_right, descriptors_right = c.DETECTOR.detectAndCompute(img_right, None)
 
     # find matches between images, and exclude outliers
-    matcher_name = kwargs.get("matcher_name", c.DEFAULT_MATCHER_NAME)
-    cross_check = kwargs.get("cross_check", c.SHOULD_CROSS_CHECK)
-    matcher = Matcher(matcher_name, cross_check)
-    all_matches = matcher.match(descriptors_left, descriptors_right)
+    all_matches = c.MATCHER.match(descriptors_left, descriptors_right)
 
     # exclude outlier matches
-    max_vertical_distance = kwargs.get("max_vertical_distance", MaxVerticalDistance)
     inlier_matches = []
     for m in all_matches:
         kp_left = keypoints_left[m.queryIdx]
         kp_right = keypoints_right[m.trainIdx]
         vertical_dist = abs(kp_left.pt[1] - kp_right.pt[1])
-        if vertical_dist <= max_vertical_distance:
+        if vertical_dist <= MaxVerticalDistance:
             inlier_matches.append(m)
     return keypoints_left, descriptors_left, keypoints_right, descriptors_right, inlier_matches
 
@@ -66,25 +54,11 @@ def match_between_frames(back_frame: Frame, front_frame: Frame, **kwargs) -> (li
     - unique_matches: A list of 2-tuples, containing keypoints of the front-matches that don't have a corresponding
         match in among the back-matches.
     """
-    detector_name = kwargs.get("detector_name", c.DEFAULT_DETECTOR_NAME)
-    matcher_name = kwargs.get("matcher_name", c.DEFAULT_MATCHER_NAME)
-    cross_check = kwargs.get("cross_check", c.SHOULD_CROSS_CHECK)
-    max_vertical_distance = kwargs.get("max_vertical_distance", MaxVerticalDistance)
 
-    # detect keypoints and extract inliers for each Frame separately
-    kps_back_left, desc_back_left, kps_back_right, _, back_matches = detect_and_match(back_frame,
-                                                                                      detector_name=detector_name,
-                                                                                      matcher_name=matcher_name,
-                                                                                      cross_check=cross_check,
-                                                                                      max_vertical_distance=max_vertical_distance)
-    kps_front_left, desc_front_left, kps_front_right, _, front_matches = detect_and_match(front_frame,
-                                                                                          detector_name=detector_name,
-                                                                                          matcher_name=matcher_name,
-                                                                                          cross_check=cross_check,
-                                                                                          max_vertical_distance=max_vertical_distance)
-    # extract matches between frames
-    matcher = Matcher(matcher_name, cross_check)
-    between_frame_matches = matcher.match(desc_back_left, desc_front_left)
+    # detect keypoints and extract inliers within each Frame and between Frames
+    kps_back_left, desc_back_left, kps_back_right, _, back_matches = detect_and_match(back_frame)
+    kps_front_left, desc_front_left, kps_front_right, _, front_matches = detect_and_match(front_frame)
+    between_frame_matches = c.MATCHER.match(desc_back_left, desc_front_left)
 
     # find keypoints that are matched within both Frame and between Frames:
     mutual_matches_cv2 = _find_mutual_matches(back_matches, front_matches, between_frame_matches)

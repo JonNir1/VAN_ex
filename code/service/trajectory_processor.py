@@ -60,7 +60,7 @@ def _process_first_frame():
     K, M_left, M_right = u.read_first_camera_matrices()
     first_frame.left_camera = Camera(0, Side.LEFT, M_left)
     first_frame.right_camera = Camera(0, Side.RIGHT, M_right)
-    cv2_kps_left, _, cv2_kps_right, _, cv2_inliers = detect_and_match(first_frame, cross_check=False)
+    cv2_kps_left, _, cv2_kps_right, _, cv2_inliers = detect_and_match(first_frame)
     for inlier in cv2_inliers:
         kp_l = KeyPoint.from_cv2_keypoint(cv2_kps_left[inlier.queryIdx])
         kp_r = KeyPoint.from_cv2_keypoint(cv2_kps_right[inlier.trainIdx])
