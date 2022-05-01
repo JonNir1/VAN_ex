@@ -193,7 +193,6 @@ for fr_idx in frame_ids:
 
 errs_df = pd.DataFrame.from_dict(errs, orient='index', columns=["left_error", "right_error"])
 plt.scatter(errs_df.index, errs_df["left_error"], label="left_error")
-# plt.scatter(errs_df.index, errs_df["right_error"], label="right_error")
 plt.title("Reprojection Errors")
 plt.ylabel("FrameIdx")
 plt.ylabel("Euclidean Distance")
