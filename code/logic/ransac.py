@@ -26,15 +26,14 @@ class Ransac:
         start = time.time()
         if verbose:
             print(f"Starting RANSAC with {self._num_iterations} iterations")
-        matched_points_3d = triangulate_matches([m.get_frame_match(Position.BACK) for m in mutual_matches], bl_cam,
-                                                br_cam)
-        actual_projections_fl = np.array([m.get_keypoint(Side.LEFT, Position.FRONT).pt for m in mutual_matches])
-        actual_projections_fr = np.array([m.get_keypoint(Side.RIGHT, Position.FRONT).pt for m in mutual_matches])
-        supporting_indices = self._find_supporters_subset(mutual_matches, bl_cam, br_cam, matched_points_3d,
-                                                          actual_projections_fl, actual_projections_fr, verbose)
+        back_3d_points = triangulate_matches([m.get_frame_match(Position.BACK) for m in mutual_matches], bl_cam, br_cam)
+        fl_projections = np.array([m.get_keypoint(Side.LEFT, Position.FRONT).pt for m in mutual_matches])
+        fr_projections = np.array([m.get_keypoint(Side.RIGHT, Position.FRONT).pt for m in mutual_matches])
+        supporting_indices = self._find_supporters_subset(mutual_matches, bl_cam, br_cam, back_3d_points,
+                                                          fl_projections, fr_projections, verbose)
         fl_cam, fr_cam, supporting_matches = self._refine_best_model(mutual_matches, bl_cam, br_cam, supporting_indices,
-                                                                     matched_points_3d, actual_projections_fl,
-                                                                     actual_projections_fr, verbose)
+                                                                     back_3d_points, fl_projections,
+                                                                     fr_projections, verbose)
         elapsed = time.time() - start
         if verbose:
             print(f"Completed RANSAC in {elapsed:.2f} seconds\n\tNumber of Supporters: {len(supporting_matches)}\n")
