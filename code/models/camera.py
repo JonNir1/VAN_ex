@@ -1,7 +1,7 @@
-import os
 import numpy as np
 
 import config as c
+import utils as u
 from models.directions import Side
 
 
@@ -12,38 +12,20 @@ class Camera:
     comprised of a 3x3 rotation matrix (R) and a 3x1 translation vector (t)
     """
 
-    @staticmethod
-    def read_first_cameras():
-        """
-        Load camera matrices from the KITTY dataset
-        Returns 2 Camera objects with the following matrices:
-            K - Intrinsic camera matrix
-            M_left, M_right - Extrinsic camera matrix (left, right)
-        """
-        with open(os.path.join(c.DATA_READ_PATH, 'calib.txt'), "r") as f:
-            l1 = f.readline().split()[1:]  # skip first token
-            l2 = f.readline().split()[1:]  # skip first token
-        l1 = [float(i) for i in l1]
-        m1 = np.array(l1).reshape(3, 4)
-        l2 = [float(i) for i in l2]
-        m2 = np.array(l2).reshape(3, 4)
-        K = m1[:, :3]
-        M_left = np.linalg.inv(K) @ m1
-        M_right = np.linalg.inv(K) @ m2
-        left_cam = Camera(0, Side.LEFT, K, M_left)
-        right_cam = Camera(0, Side.RIGHT, K, M_right)
-        return left_cam, right_cam
+    _K: np.ndarray = np.array([])
+    _RightRotation: np.ndarray = np.array([])
+    _RightTranslation: np.ndarray = np.array([])
 
-    def __init__(self, idx: int, side: Side,
-                 intrinsic_mat: np.ndarray, extrinsic_mat: np.ndarray):
+    def __init__(self, idx: int, side: Side, extrinsic_mat: np.ndarray):
         self.idx = idx
         self.side = side
-        self._intrinsic_matrix = self.__verify_matrix(intrinsic_mat, 3, 3, "Intrinsic")
         self._extrinsic_matrix = self.__verify_matrix(extrinsic_mat, 3, 4, "Extrinsic")
+        if self._K.size == 0:
+            self._update_class_attributes()
 
     @property
     def intrinsic_matrix(self) -> np.ndarray:
-        return self._intrinsic_matrix
+        return self._K
 
     @property
     def extrinsic_matrix(self) -> np.ndarray:
@@ -56,16 +38,15 @@ class Camera:
         if points.shape[0] != 3:
             points = points.T
 
-        K = self._intrinsic_matrix
         R = self.get_rotation_matrix()
         t = self.get_translation_vector()
-        projections = K @ (R @ points + t)  # non normalized homogeneous coordinates of shape 3xN
+        projections = self._K @ (R @ points + t)  # non normalized homogeneous coordinates of shape 3xN
         hom_coordinates = projections / (projections[2] + c.Epsilon)  # add epsilon to avoid 0 division
         return hom_coordinates[:2]  # return only first 2 rows (x,y coordinates)
 
     def calculate_projection_matrix(self) -> np.ndarray:
         # returns a 3x4 ndarray that maps a 3D point ro its corresponding 2D point on the camera plain
-        return self._intrinsic_matrix @ self._extrinsic_matrix
+        return self._K @ self._extrinsic_matrix
 
     def get_rotation_matrix(self) -> np.ndarray:
         r = self._extrinsic_matrix[:, :3]
@@ -80,22 +61,25 @@ class Camera:
         Calculates the extrinsic matrix of the right Camera, based on $self, and the first right Camera
         Returns a Camera object if successful
         """
-        _, first_right_cam = Camera.read_first_cameras()
-        right_rot0 = first_right_cam.get_rotation_matrix()
-        right_trans0 = first_right_cam.get_translation_vector()
         front_left_rot = self.get_rotation_matrix()
         front_left_trans = self.get_translation_vector()
-
-        front_right_Rot = right_rot0 @ front_left_rot
-        front_right_trans = right_rot0 @ front_left_trans + right_trans0
+        front_right_Rot = self._RightRotation @ front_left_rot
+        front_right_trans = self._RightRotation @ front_left_trans + self._RightTranslation
         ext_mat = Camera.calculate_extrinsic_matrix(front_right_Rot, front_right_trans)
-        return Camera(idx=self.idx, side=Side.RIGHT, intrinsic_mat=self.intrinsic_matrix, extrinsic_mat=ext_mat)
+        return Camera(idx=self.idx, side=Side.RIGHT, extrinsic_mat=ext_mat)
 
     @staticmethod
     def calculate_extrinsic_matrix(rotation_matrix: np.ndarray, translation_vector: np.ndarray) -> np.ndarray:
         r = Camera.__verify_matrix(rotation_matrix, 3, 3, "Rotation")
         t = Camera.__verify_vector(translation_vector, 3, "Translation")
         return np.hstack([r, t])
+
+    @classmethod
+    def _update_class_attributes(cls):
+        K, Mleft, Mright = u.read_first_camera_matrices()
+        Camera._K = Camera.__verify_matrix(K, 3, 3, "K")
+        Camera._RightRotation = Camera.__verify_matrix(Mright[:, :3], 3, 3, "Right Rotation")
+        Camera._RightTranslation = Camera.__verify_vector(Mright[:, 3:], 3, "Right Translation")
 
     @staticmethod
     def __verify_matrix(mat: np.ndarray, num_rows: int, num_cols: int, matrix_name: str):

@@ -5,7 +5,7 @@ from typing import Optional
 from models.camera import Camera
 from models.match import MutualMatch
 from models.directions import Side, Position
-from logic.triangulation import triangulate
+from logic.triangulation import triangulate_matches
 
 
 MinSamplesNumber = 4
@@ -33,12 +33,12 @@ def _compute_front_left_camera(mutual_matches: list[MutualMatch], bl_cam: Camera
     next_idx = bl_cam.idx + 1
     K = bl_cam.intrinsic_matrix
     back_frame_matches = [m.get_frame_match(Position.BACK) for m in mutual_matches]
-    point_cloud_3d = (triangulate(back_frame_matches, bl_cam, br_cam)).T                                    # shape (3, N)
+    point_cloud_3d = (triangulate_matches(back_frame_matches, bl_cam, br_cam)).T                            # shape (3, N)
     front_left_pixels = np.array([(m.get_keypoint(Side.LEFT, Position.FRONT)).pt for m in mutual_matches])  # shape (N, 2)
     success, rotation, translation = cv2.solvePnP(objectPoints=point_cloud_3d, imagePoints=front_left_pixels,
                                                   cameraMatrix=K, distCoeffs=None, flags=cv2.SOLVEPNP_EPNP)
     if success:
         ext_mat = Camera.calculate_extrinsic_matrix(cv2.Rodrigues(rotation)[0], translation)
-        return Camera(idx=next_idx, side=Side.LEFT, intrinsic_mat=K, extrinsic_mat=ext_mat)
+        return Camera(idx=next_idx, side=Side.LEFT, extrinsic_mat=ext_mat)
     return None
 

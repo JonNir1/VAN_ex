@@ -5,7 +5,7 @@ import numpy as np
 from models.directions import Side, Position
 from models.match import MutualMatch
 from models.camera import Camera
-from logic.triangulation import triangulate
+from logic.triangulation import triangulate_matches
 from logic.pnp import compute_front_cameras
 
 
@@ -26,7 +26,8 @@ class Ransac:
         start = time.time()
         if verbose:
             print(f"Starting RANSAC with {self._num_iterations} iterations")
-        matched_points_3d = triangulate([m.get_frame_match(Position.BACK) for m in mutual_matches], bl_cam, br_cam)
+        matched_points_3d = triangulate_matches([m.get_frame_match(Position.BACK) for m in mutual_matches], bl_cam,
+                                                br_cam)
         actual_projections_fl = np.array([m.get_keypoint(Side.LEFT, Position.FRONT).pt for m in mutual_matches])
         actual_projections_fr = np.array([m.get_keypoint(Side.RIGHT, Position.FRONT).pt for m in mutual_matches])
         supporting_indices = self._find_supporters_subset(mutual_matches, bl_cam, br_cam, matched_points_3d,

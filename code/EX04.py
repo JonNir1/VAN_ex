@@ -149,7 +149,7 @@ plt.show()
 #         Track Length Histogram          #
 ###########################################
 
-ax = track_lengths.plot.hist()
+ax = track_lengths.plot.hist(bins=70)
 ax.set_title("Track Length Histogram")
 ax.set_xlabel("Track Length")
 ax.set_ylabel("Count")
@@ -160,14 +160,13 @@ plt.show()
 #          Reprojection Error           #
 #########################################
 
+# TODO: this should be it's own class
+
 from models.directions import Side
 from models.camera import Camera
 from logic.triangulation import triangulate
 
-# TODO: this should be it's own class
-
-cam0_l, cam0_r = Camera.read_first_cameras()
-K = cam0_l.intrinsic_matrix
+K, _, _ = u.read_first_camera_matrices()
 Rs, ts = u.read_poses()
 
 long_track, length = dba.sample_track_idx_with_length(10)
@@ -177,7 +176,7 @@ last_frame_id = max(frame_ids)
 _, _, _, frame = track_data.xs(last_frame_id)
 frame_match = frame.get_match(track_id=long_track)
 
-last_cam_left = Camera(idx=last_frame_id, side=Side.LEFT, intrinsic_mat=K,
+last_cam_left = Camera(idx=last_frame_id, side=Side.LEFT,
                        extrinsic_mat=Camera.calculate_extrinsic_matrix(Rs[last_frame_id], ts[last_frame_id]))
 last_cam_right = last_cam_left.calculate_right_camera()
 point_3d = triangulate_matches(matches=[frame_match], left_cam=last_cam_left, right_cam=last_cam_right)

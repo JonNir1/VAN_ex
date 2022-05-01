@@ -26,6 +26,26 @@ def read_image_pair(idx: int):
     return img0, img1
 
 
+def read_first_camera_matrices():
+    """
+    Load camera matrices from the KITTY dataset
+    Returns the following matrices (ndarrays):
+        K - Intrinsic camera matrix
+        M_left, M_right - Extrinsic camera matrix (left, right)
+    """
+    with open(os.path.join(c.DATA_READ_PATH, 'calib.txt'), "r") as f:
+        l1 = f.readline().split()[1:]  # skip first token
+        l2 = f.readline().split()[1:]  # skip first token
+    l1 = [float(i) for i in l1]
+    m1 = np.array(l1).reshape(3, 4)
+    l2 = [float(i) for i in l2]
+    m2 = np.array(l2).reshape(3, 4)
+    K = m1[:, :3]
+    M_left = np.linalg.inv(K) @ m1
+    M_right = np.linalg.inv(K) @ m2
+    return K, M_left, M_right
+
+
 def read_poses():
     """
     Load ground truth extrinsic matrices of left cameras from the KITTI trajectory.
