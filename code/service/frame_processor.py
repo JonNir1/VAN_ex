@@ -1,5 +1,4 @@
 import time
-import numpy as np
 from itertools import count
 
 import config as c

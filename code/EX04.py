@@ -1,5 +1,3 @@
-import os
-import cv2
 import time
 import numpy as np
 import pandas as pd
@@ -8,8 +6,6 @@ from matplotlib import pyplot as plt
 import config as c
 import utils as u
 from models.database import DataBase
-from models.frame import Frame
-from models.matcher import Matcher
 from logic.db_adapter import DBAdapter
 from logic.trajectory import calculate_trajectory, read_ground_truth_trajectory
 from service.frame_processor import FrameProcessor

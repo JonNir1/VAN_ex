@@ -4,7 +4,6 @@ import numpy as np
 from typing import NamedTuple
 
 from models.directions import Side, Position
-from models.keypoint import KeyPoint
 
 # TODO: make this work with IMatch as well
 # class NT(NamedTuple):

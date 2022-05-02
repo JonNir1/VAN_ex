@@ -2,7 +2,6 @@
 A set of utility functions to be shared between different exercises.
 """
 
-import os
 import cv2
 import numpy as np
 import config as c
@@ -42,19 +41,4 @@ def read_first_camera_matrices():
     M_left = np.linalg.inv(K) @ m1
     M_right = np.linalg.inv(K) @ m2
     return K, M_left, M_right
-
-
-def homogenize_array():
-    # TODO
-    pass
-
-
-def dehomogenize_array():
-    # TODO
-    pass
-
-
-def pixel_distance():
-    # TODO
-    pass
 
