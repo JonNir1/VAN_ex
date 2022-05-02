@@ -5,13 +5,14 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
+import config as c
 import utils as u
 from models.database import DataBase
 from models.frame import Frame
 from models.matcher import Matcher
 from logic.db_adapter import DBAdapter
-from logic.keypoints_matching import detect_and_match
-from service.trajectory_processor import estimate_trajectory
+from logic.trajectory import calculate_trajectory, read_ground_truth_trajectory
+from service.frame_processor import FrameProcessor
 
 ###################################
 #        PRELIMINARY CHECK        #
@@ -19,11 +20,11 @@ from service.trajectory_processor import estimate_trajectory
 ###################################
 
 start = time.time()
-real_traj = u.read_trajectory()
-# all_frames, est_traj, _ = estimate_trajectory(verbose=False)
+fp = FrameProcessor(verbose=False)
+all_frames, _ = fp.process_frames()
 
-real_traj = real_traj[:, :50]
-all_frames, est_traj, _ = estimate_trajectory(num_frames=50, verbose=False)
+real_traj = read_ground_truth_trajectory()
+est_traj = calculate_trajectory(all_frames)
 
 error = np.linalg.norm(est_traj - real_traj, ord=2, axis=0)
 elapsed = time.time() - start
@@ -60,10 +61,10 @@ dba.to_pickle()  # save data to file
 
 
 def calculate_tracking_statistics(dbadapter: DBAdapter):
-    n_frames = dbadapter.db.index.get_level_values(DataBase.FRAMEIDX).unique().size
-    n_tracks = dbadapter.db.index.get_level_values(DataBase.TRACKIDX).unique().size
+    n_frames = dbadapter.tracks_db.index.get_level_values(DataBase.FRAMEIDX).unique().size
+    n_tracks = dbadapter.tracks_db.index.get_level_values(DataBase.TRACKIDX).unique().size
     trk_lengths = dbadapter.get_track_lengths()
-    trks_per_fr = dbadapter.db.groupby(level=DataBase.FRAMEIDX).size()
+    trks_per_fr = dbadapter.tracks_db.groupby(level=DataBase.FRAMEIDX).size()
     return n_frames, n_tracks, trk_lengths, trks_per_fr
 
 
@@ -79,19 +80,19 @@ print(f"\tFrame Density:\tmean={tracks_per_frame.mean():.2f}\tmin={tracks_per_fr
 ##################################
 
 long_track, length = dba.sample_track_idx_with_length(10, 14)
-track_data = dba.db.xs(long_track, level=DataBase.TRACKIDX)
+track_data = dba.tracks_db.xs(long_track, level=DataBase.TRACKIDX)
 frame_ids = track_data.index.get_level_values(DataBase.FRAMEIDX).tolist()
 
 fig, axes = plt.subplots(len(frame_ids), 2)
 fig.suptitle(f"Frames {min(frame_ids)}-{max(frame_ids)}\nTrack{long_track}")
 for i, frame_idx in enumerate(frame_ids):
     img_l, img_r = u.read_image_pair(frame_idx)
-    x_l, x_r, y, _ = track_data.xs(frame_idx)
+    x_l, x_r, y = track_data.xs(frame_idx)
     axes[i][0].imshow(img_l, cmap='gray', vmin=0, vmax=255)
-    axes[i][0].scatter(x_l, y, s=4, c='orange')
+    axes[i][0].scatter(x_l, y, s=6, c='cyan')
     axes[i][0].axis('off')
     axes[i][1].imshow(img_r, cmap='gray', vmin=0, vmax=255)
-    axes[i][1].scatter(x_r, y, s=4, c='orange')
+    axes[i][1].scatter(x_r, y, s=6, c='cyan')
     axes[i][1].axis('off')
 plt.subplots_adjust(wspace=-0.65, hspace=0.3, top=0.9, bottom=0.02)
 plt.show()
@@ -105,7 +106,7 @@ plt.show()
 
 def calculate_connectivity(dbadapter: DBAdapter, shift: int = 1) -> pd.Series:
     # For all Frames, returns the amount of shared tracks between any Frame i and frame i+shift
-    frame_indices = dbadapter.db.index.get_level_values(DataBase.FRAMEIDX)
+    frame_indices = dbadapter.tracks_db.index.get_level_values(DataBase.FRAMEIDX)
     last_frame_to_check = frame_indices.max() - shift + 1
     shared_tracks_count = dict()
     for fr_idx in range(last_frame_to_check):
@@ -128,32 +129,33 @@ print(f"Mean Connectivity: {one_connectivity.mean() :.2f}")
 #           Question 4.5             #
 #          % Inliers Graph           #
 ######################################
+
 # We want to show the % of tracks from the total # of back-front matches.
 # This value is not stored when estimating trajectory (it's irrelevant), so we need to compute it separately:
-match_count = dict()
-matcher = Matcher("flann", False)
-back_frame = Frame(0)
-for i in range(1, num_frames):
-    front_frame = Frame(i)
-    _, bl_desc, _, _, _ = detect_and_match(back_frame)
-    _, fl_desc, _, _, _ = detect_and_match(front_frame)
-    matches = matcher.match(bl_desc, fl_desc)
-    match_count[i - 1] = len(matches)
-    back_frame = front_frame
+# NOTE!! This takes a long time because we are re-matching all 3450 Frame-pairs
 
-match_count_series = pd.Series(match_count)
-track_percent = 100 * tracks_per_frame[:-1] / match_count_series
-ax = track_percent.plot.line(color='b')
+track_percents = {}
+for i, fr in enumerate(all_frames[:-1]):
+    back_left_img, _ = u.read_image_pair(fr.id)
+    _, back_desc = c.DETECTOR.detectAndCompute(back_left_img, None)
+    front_left_img = u.read_image_pair(fr.id + 1)
+    _, front_desc = c.DETECTOR.detectAndCompute(back_left_img, None)
+    matches = c.MATCHER.match(back_desc, front_desc)
+    track_percents[fr.id] = 100 * fr.next_frame_tracks_count / len(matches)
+
+track_percents = pd.Series(track_percents)
+ax = track_percents.plot.line(color='b')
 ax.set_title("% Tracks")
 ax.set_xlabel("FrameIdx")
 plt.show()
+print(f"Mean %Tracks: {track_percents.mean() :.2f}")
 
 ###########################################
 #              Question 4.6               #
 #         Track Length Histogram          #
 ###########################################
 
-ax = track_lengths.plot.hist(bins=70)
+ax = track_lengths.plot.hist(bins=65)
 ax.set_title("Track Length Histogram")
 ax.set_xlabel("Track Length")
 ax.set_ylabel("Count")
@@ -166,36 +168,35 @@ plt.show()
 
 # TODO: this should be it's own class
 
-from models.directions import Side
-from models.camera import Camera
+from logic.trajectory import read_poses
 from logic.triangulation import triangulate
 
 K, _, _ = u.read_first_camera_matrices()
-Rs, ts = u.read_poses()
+Rs, ts = read_poses()
 
 long_track, length = dba.sample_track_idx_with_length(10)
-track_data = dba.db.xs(long_track, level=DataBase.TRACKIDX)
+track_data = dba.tracks_db.xs(long_track, level=DataBase.TRACKIDX)
 frame_ids = track_data.index.get_level_values(DataBase.FRAMEIDX).tolist()
 last_frame_id = max(frame_ids)
-_, _, _, frame = track_data.xs(last_frame_id)
-frame_match = frame.get_match(track_id=long_track)
+x_l, x_r, y = track_data.xs(last_frame_id)
+left_pixels, right_pixels = np.array([x_l, y]).reshape((2, 1)), np.array([x_r, y]).reshape((2, 1))
+left_cam, right_cam = dba.cameras_db.xs(last_frame_id)
 
-last_cam_left = Camera(idx=last_frame_id, side=Side.LEFT,
-                       extrinsic_mat=Camera.calculate_extrinsic_matrix(Rs[last_frame_id], ts[last_frame_id]))
-last_cam_right = last_cam_left.calculate_right_camera()
-point_3d = triangulate_matches(matches=[frame_match], left_cam=last_cam_left, right_cam=last_cam_right)
+point_3d = triangulate(pixels1=left_pixels, pixels2=right_pixels, cam1=left_cam, cam2=right_cam)
 
 errs = dict()
 for fr_idx in frame_ids:
-    x_l, x_r, y, frame = track_data.xs(fr_idx)
-    x_l_proj, y_l_proj = frame.left_camera.project_3d_points(point_3d)
-    left_err = np.power(np.power(x_l_proj - x_l, 2) + np.power(y_l_proj - y, 2), 0.5)
-    x_r_proj, y_r_proj = frame.right_camera.project_3d_points(point_3d)
-    right_err = np.power(np.power(x_r_proj - x_r, 2) + np.power(y_r_proj - y, 2), 0.5)
-    errs[fr_idx] = (left_err[0], right_err[0])
+    x_l, x_r, y = track_data.xs(fr_idx)
+    left_cam, right_cam = dba.cameras_db.xs(fr_idx)
+    x_l_proj, y_l_proj = left_cam.project_3d_points(point_3d)
+    left_err = np.linalg.norm(np.array([x_l, y]).reshape((2,)) - np.array([x_l_proj, y_l_proj]).reshape((2,)), ord=2)
+    x_r_proj, y_r_proj = right_cam.project_3d_points(point_3d)
+    right_err = np.linalg.norm(np.array([x_r, y]).reshape((2,)) - np.array([x_r_proj, y_r_proj]).reshape((2,)), ord=2)
+    errs[fr_idx] = (left_err, right_err)
 
 errs_df = pd.DataFrame.from_dict(errs, orient='index', columns=["left_error", "right_error"])
 plt.scatter(errs_df.index, errs_df["left_error"], label="left_error")
+plt.scatter(errs_df.index, errs_df["right_error"], label="right_error")
 plt.title("Reprojection Errors")
 plt.ylabel("FrameIdx")
 plt.ylabel("Euclidean Distance")

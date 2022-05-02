@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 # from abc import ABCMeta, ABC, abstractmethod
 from typing import NamedTuple
@@ -27,10 +28,10 @@ from models.keypoint import KeyPoint
 
 class FrameMatch(NamedTuple):
 
-    left_keypoint: KeyPoint
-    right_keypoint: KeyPoint
+    left_keypoint: cv2.KeyPoint
+    right_keypoint: cv2.KeyPoint
 
-    def get_keypoint(self, s: Side) -> KeyPoint:
+    def get_keypoint(self, s: Side) -> cv2.KeyPoint:
         if s == Side.LEFT:
             return self.left_keypoint
         return self.right_keypoint
@@ -44,11 +45,8 @@ class FrameMatch(NamedTuple):
             return False
         return self.left_keypoint == other.left_keypoint and self.right_keypoint == other.right_keypoint
 
-    def __str__(self):
-        return f"FM({str(self.left_keypoint)} - {str(self.right_keypoint)})"
-
     def __hash__(self):
-        hash((self.left_keypoint, self.right_keypoint))
+        return hash(id(self))
 
 
 class MutualMatch(NamedTuple):
@@ -61,7 +59,7 @@ class MutualMatch(NamedTuple):
             return self.back_frame_match
         return self.front_frame_match
 
-    def get_keypoint(self, s: Side, p: Position) -> KeyPoint:
+    def get_keypoint(self, s: Side, p: Position) -> cv2.KeyPoint:
         frame_match = self.get_frame_match(p)
         return frame_match.get_keypoint(s)
 
@@ -80,4 +78,4 @@ class MutualMatch(NamedTuple):
         return f"MM({str(self.back_frame_match)} | {str(self.front_frame_match)})"
 
     def __hash__(self):
-        return hash((self.back_frame_match, self.front_frame_match))
+        return hash(id(self))

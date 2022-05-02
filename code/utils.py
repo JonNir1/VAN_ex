@@ -44,38 +44,6 @@ def read_first_camera_matrices():
     return K, M_left, M_right
 
 
-def read_poses():
-    """
-    Load ground truth extrinsic matrices of left cameras from the KITTI trajectory.
-    All cameras are calibrated w.r.t. the first left camera
-    returns two lists of matrices:
-        Rs are 3x3 rotation matrices
-        ts are 3x1 translation vectors
-    """
-    Rs, ts = [], []
-    f = open(f"{c.DATA_READ_PATH}\\poses\\00.txt", 'r')
-    for i, line in enumerate(f.readlines()):
-        mat = np.array(line.split(), dtype=float).reshape((3, 4))
-        Rs.append(mat[:, :3])
-        ts.append(mat[:, 3:])
-    return Rs, ts
-
-
-def read_trajectory() -> np.ndarray:
-    """
-    Load ground truth extrinsic matrices of left cameras from the KITTI dataset,
-        and use them to calculate the camera positions in 3D coordinates.
-    Returns a 3xN array representing the position of each (left-)camera
-    """
-    Rs, ts = read_poses()
-    num_samples = len(Rs)
-    trajectory = np.zeros((num_samples, 3))
-    for i in range(num_samples):
-        R, t = Rs[i], ts[i]
-        trajectory[i] -= (R.T @ t).reshape((3,))
-    return trajectory.T
-
-
 def homogenize_array():
     # TODO
     pass
