@@ -24,7 +24,7 @@ class Frame:
         self.right_camera = right_cam
         self.inlier_matches = list[FrameMatch]()
         self.inlier_descriptors = []
-        self.next_frame_tracks_count = 0
+        self.next_frame_match_count = 0
         self.match_to_track_id = dict[tuple[cv2.KeyPoint, cv2.KeyPoint], int]()
         self._detect_and_match()
 

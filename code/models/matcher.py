@@ -20,7 +20,7 @@ class Matcher:
 
     def match_between_frames(self, back_frame: Frame, front_frame: Frame) -> list[MutualMatch]:
         between_frame_matches = self.match(back_frame.inlier_descriptors, front_frame.inlier_descriptors)
-        back_frame.next_frame_tracks_count = len(between_frame_matches)
+        back_frame.next_frame_match_count = len(between_frame_matches)
         mutual_matches = []
         for m in between_frame_matches:
             back_match = back_frame.inlier_matches[m.queryIdx]

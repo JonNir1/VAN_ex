@@ -48,7 +48,7 @@ plt.show()
 ##################################
 
 dba = DBAdapter(all_frames)
-dba.to_pickle()  # save data to file
+# dba.to_pickle()  # save data to file
 
 ##################################
 #         Question 4.2           #
@@ -85,10 +85,10 @@ for i, frame_idx in enumerate(frame_ids):
     img_l, img_r = u.read_image_pair(frame_idx)
     x_l, x_r, y = track_data.xs(frame_idx)
     axes[i][0].imshow(img_l, cmap='gray', vmin=0, vmax=255)
-    axes[i][0].scatter(x_l, y, s=6, c='cyan')
+    axes[i][0].scatter(x_l, y, s=6, c='y')
     axes[i][0].axis('off')
     axes[i][1].imshow(img_r, cmap='gray', vmin=0, vmax=255)
-    axes[i][1].scatter(x_r, y, s=6, c='cyan')
+    axes[i][1].scatter(x_r, y, s=6, c='y')
     axes[i][1].axis('off')
 plt.subplots_adjust(wspace=-0.65, hspace=0.3, top=0.9, bottom=0.02)
 plt.show()
@@ -126,25 +126,18 @@ print(f"Mean Connectivity: {one_connectivity.mean() :.2f}")
 #          % Inliers Graph           #
 ######################################
 
-# We want to show the % of tracks from the total # of back-front matches.
-# This value is not stored when estimating trajectory (it's irrelevant), so we need to compute it separately:
-# NOTE!! This takes a long time because we are re-matching all 3450 Frame-pairs
-
 track_percents = {}
-for i, fr in enumerate(all_frames[:-1]):
-    back_left_img, _ = u.read_image_pair(fr.id)
-    _, back_desc = c.DETECTOR.detectAndCompute(back_left_img, None)
-    front_left_img = u.read_image_pair(fr.id + 1)
-    _, front_desc = c.DETECTOR.detectAndCompute(back_left_img, None)
-    matches = c.MATCHER.match(back_desc, front_desc)
-    track_percents[fr.id] = 100 * fr.next_frame_tracks_count / len(matches)
+for fr_idx in one_connectivity.index:
+    fr = all_frames[fr_idx]
+    match_count = fr.next_frame_match_count
+    track_percents[fr_idx] = 100 * one_connectivity.xs(fr_idx) / fr.next_frame_match_count
 
 track_percents = pd.Series(track_percents)
 ax = track_percents.plot.line(color='b')
 ax.set_title("% Tracks")
 ax.set_xlabel("FrameIdx")
 plt.show()
-print(f"Mean %Tracks: {track_percents.mean() :.2f}")
+print(f"Mean % Tracks: {track_percents.mean() :.2f}")
 
 ###########################################
 #              Question 4.6               #
