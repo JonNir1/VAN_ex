@@ -50,6 +50,7 @@ class FrameProcessor:
         front_frame.right_camera = fr_cam
 
         # update tracks:
+        # TODO: fix bug in tracking logic (why do we have Tracks of length 1?)
         for supporter in supporting_matches:
             back_match = supporter.get_frame_match(Position.BACK)
             front_match = supporter.get_frame_match(Position.FRONT)
