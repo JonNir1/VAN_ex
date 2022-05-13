@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from typing import List
 
 import config as c
 from models.frame import Frame
@@ -12,7 +13,7 @@ class DataBase:
     X_LEFT, X_RIGHT, Y = "X_Left", "X_Right", "Y"
 
     @staticmethod
-    def build_tracks_database(data: list[Frame]) -> pd.DataFrame:
+    def build_tracks_database(data: List[Frame]) -> pd.DataFrame:
         # TODO: make this more efficient!
         if len(data) == 0:
             # return empty DataFrame with correct columns & index
@@ -33,7 +34,7 @@ class DataBase:
         return db
 
     @staticmethod
-    def build_cameras_database(data: list[Frame]) -> pd.DataFrame:
+    def build_cameras_database(data: List[Frame]) -> pd.DataFrame:
         cameras = {}
         for fr in data:
             cameras[fr.id] = {DataBase.CAM_LEFT: fr.left_camera, DataBase.CAM_RIGHT: fr.right_camera}

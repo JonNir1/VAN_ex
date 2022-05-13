@@ -2,6 +2,7 @@ import cv2
 
 from models.frame import Frame
 from models.match import MutualMatch
+from typing import List
 
 
 class Matcher:
@@ -13,12 +14,12 @@ class Matcher:
         self.type = matcher_name.upper()
         self._matcher = self.__create_matcher()
 
-    def match(self, query_desc, train_desc) -> list[cv2.DMatch]:
+    def match(self, query_desc, train_desc) -> List[cv2.DMatch]:
         matches_2nn = self._matcher.knnMatch(query_desc, train_desc, 2)
         good_matches = [first for (first, second) in matches_2nn if first.distance / second.distance <= self.Ratio]
         return good_matches
 
-    def match_between_frames(self, back_frame: Frame, front_frame: Frame) -> list[MutualMatch]:
+    def match_between_frames(self, back_frame: Frame, front_frame: Frame) -> List[MutualMatch]:
         between_frame_matches = self.match(back_frame.inlier_descriptors, front_frame.inlier_descriptors)
         back_frame.next_frame_match_count = len(between_frame_matches)
         mutual_matches = []

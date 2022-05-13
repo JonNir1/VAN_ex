@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 
 import config as c
 import utils as u
@@ -22,13 +22,13 @@ class Frame:
         self.id = idx
         self.left_camera = left_cam
         self.right_camera = right_cam
-        self.inlier_matches = list[FrameMatch]()
+        self.inlier_matches = List[FrameMatch]()
         self.inlier_descriptors = []
         self.next_frame_match_count = 0
-        self.match_to_track_id = dict[tuple[cv2.KeyPoint, cv2.KeyPoint], int]()
+        self.match_to_track_id = Dict[Tuple[cv2.KeyPoint, cv2.KeyPoint], int]()
         self._detect_and_match()
 
-    def find_tracks(self, left_kp: cv2.KeyPoint) -> list[int]:
+    def find_tracks(self, left_kp: cv2.KeyPoint) -> List[int]:
         # returns all tracks that include $left_kp
         all_tracks = []
         inliers = [fm for fm in self.inlier_matches if fm.left_keypoint == left_kp]

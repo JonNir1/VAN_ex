@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 from datetime import datetime
+from typing import List, Tuple
 
 import config as c
 from models.database import DataBase
@@ -12,7 +13,7 @@ from models.frame import Frame
 class DBAdapter:
     # This class is used for accessing the DataBase without exposing any "write" privileges on the DB
 
-    def __init__(self, data: list[Frame]):
+    def __init__(self, data: List[Frame]):
         self.tracks_db = DataBase.build_tracks_database(data)
         self.cameras_db = DataBase.build_cameras_database(data)
 
@@ -35,7 +36,7 @@ class DBAdapter:
     def get_track_lengths(self) -> pd.Series:
         return self.tracks_db.groupby(level=DataBase.TRACKIDX).size()
 
-    def sample_track_idx_with_length(self, min_len: int = 10, max_len: int = None) -> tuple[int, int]:
+    def sample_track_idx_with_length(self, min_len: int = 10, max_len: int = None) -> Tuple[int, int]:
         track_lengths = self.get_track_lengths()
         if max_len is None:
             relevant_indices = track_lengths >= min_len

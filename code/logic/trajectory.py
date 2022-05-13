@@ -1,10 +1,11 @@
 import numpy as np
+from typing import List
 
 import config as c
 from models.frame import Frame
 
 
-def calculate_trajectory(frames: list[Frame]) -> np.ndarray:
+def calculate_trajectory(frames: List[Frame]) -> np.ndarray:
     """
     Calculates the left-camera trajectory of all frames.
     Returns a 3xN array representing the 3D location of all (left-)cameras of the provided Frames

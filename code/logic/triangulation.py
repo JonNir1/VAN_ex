@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from typing import List
 
 import config as c
 from models.directions import Side
@@ -7,7 +8,7 @@ from models.camera import Camera
 from models.match import FrameMatch
 
 
-def triangulate_matches(matches: list[FrameMatch], left_cam: Camera, right_cam: Camera) -> np.ndarray:
+def triangulate_matches(matches: List[FrameMatch], left_cam: Camera, right_cam: Camera) -> np.ndarray:
     """
     Reconstructs 3D points from array of paired 2D keypoints, based on the two Camera objects that created the keypoints
     @params:

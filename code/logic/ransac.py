@@ -1,6 +1,7 @@
 import time
 import random
 import numpy as np
+from typing import List, Tuple
 
 from models.directions import Side, Position
 from models.match import MutualMatch
@@ -21,8 +22,8 @@ class Ransac:
         self._num_iterations = self.__calculate_number_of_iteration()  # this value is updated during the Ransac's run
 
 
-    def run(self, mutual_matches: list[MutualMatch], bl_cam: Camera, br_cam: Camera,
-            verbose: bool = False) -> tuple[Camera, Camera, list[MutualMatch]]:
+    def run(self, mutual_matches: List[MutualMatch], bl_cam: Camera, br_cam: Camera,
+            verbose: bool = False) -> Tuple[Camera, Camera, List[MutualMatch]]:
         start = time.time()
         if verbose:
             print(f"Starting RANSAC with {self._num_iterations} iterations")
@@ -39,7 +40,7 @@ class Ransac:
             print(f"Completed RANSAC in {elapsed:.2f} seconds\n\tNumber of Supporters: {len(supporting_matches)}\n")
         return fl_cam, fr_cam, supporting_matches
 
-    def _find_supporters_subset(self, mutual_matches: list[MutualMatch], bl_cam: Camera, br_cam: Camera,
+    def _find_supporters_subset(self, mutual_matches: List[MutualMatch], bl_cam: Camera, br_cam: Camera,
                                 matched_points_3d: np.ndarray, front_left_pixels: np.ndarray,
                                 front_right_pixels: np.ndarray, verbose: bool = False) -> np.ndarray:
         """
@@ -79,10 +80,10 @@ class Ransac:
                           f"\tRem. Iterations: {self._num_iterations}")
         return best_supporting_indices
 
-    def _refine_best_model(self, mutual_matches: list[MutualMatch], bl_cam: Camera, br_cam: Camera,
+    def _refine_best_model(self, mutual_matches: List[MutualMatch], bl_cam: Camera, br_cam: Camera,
                            best_supporting_indices: np.ndarray, matched_points_3d: np.ndarray,
                            front_left_pixels: np.ndarray, front_right_pixels: np.ndarray,
-                           verbose: bool = False) -> tuple[Camera, Camera, list[MutualMatch]]:
+                           verbose: bool = False) -> Tuple[Camera, Camera, List[MutualMatch]]:
         if verbose:
             print("Starting refinement loop of RANSAC")
         while True:

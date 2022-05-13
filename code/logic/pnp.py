@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from models.camera import Camera
 from models.match import MutualMatch
@@ -11,8 +11,8 @@ from logic.triangulation import triangulate_matches
 MinSamplesNumber = 4
 
 
-def compute_front_cameras(mutual_matches: list[MutualMatch], bl_cam: Camera, br_cam: Camera
-                          ) -> tuple[Optional[Camera], Optional[Camera]]:
+def compute_front_cameras(mutual_matches: List[MutualMatch], bl_cam: Camera, br_cam: Camera
+                          ) -> Tuple[Optional[Camera], Optional[Camera]]:
     """
     Calculate the two front Camera objects, Based on multiple MutualMatch objects (4-way match of keypoints) and
         the back pair of Camera objects.
@@ -29,7 +29,7 @@ def compute_front_cameras(mutual_matches: list[MutualMatch], bl_cam: Camera, br_
     return fl_cam, fr_cam
 
 
-def _compute_front_left_camera(mutual_matches: list[MutualMatch], bl_cam: Camera, br_cam: Camera) -> Optional[Camera]:
+def _compute_front_left_camera(mutual_matches: List[MutualMatch], bl_cam: Camera, br_cam: Camera) -> Optional[Camera]:
     next_idx = bl_cam.idx + 1
     K = bl_cam.intrinsic_matrix
     back_frame_matches = [m.get_frame_match(Position.BACK) for m in mutual_matches]
