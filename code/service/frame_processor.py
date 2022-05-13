@@ -1,5 +1,6 @@
 import time
 from itertools import count
+from typing import List, Tuple
 
 import config as c
 import utils as u
@@ -15,7 +16,7 @@ class FrameProcessor:
         self._verbose = verbose
         self._track_counter = count(0)
 
-    def process_frames(self, num_frames: int = Frame.MaxIndex + 1) -> tuple[list[Frame], float]:
+    def process_frames(self, num_frames: int = Frame.MaxIndex + 1) -> Tuple[List[Frame], float]:
         start_time, minutes_counter = time.time(), 0
         max_frame_count = Frame.MaxIndex + 1
         assert 1 < num_frames <= max_frame_count, f"Must process between 2 and {max_frame_count} frames"
