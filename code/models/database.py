@@ -43,12 +43,18 @@ class DataBase:
         return camera_df
 
     @staticmethod
-    def from_pickle(filename: str):
-        if not filename.endswith(".pkl"):
-            filename += ".pkl"
-        fullpath = os.path.join(c.DATA_WRITE_PATH, filename)
-        db = pd.read_pickle(fullpath)
-        # TODO: assert correct structure
-        return db
-
+    def from_pickle(p: str):
+        """
+        Reads a pandas DataFrame/Series object from pkl file.
+        :param p: str -> the pickle filename or full path. If only a filename is provided, defaults to the DATA_WRITE
+            directory (taken from `config` file)
+        :return: pd.DataFrame or pd.Series
+        """
+        # TODO: assert correct structure before returning
+        if not p.endswith(".pkl"):
+            p += ".pkl"
+        if os.path.dirname(p) != "":
+            return pd.read_pickle(p)
+        fullpath = os.path.join(c.DATA_WRITE_PATH, p)
+        return pd.read_pickle(fullpath)
 

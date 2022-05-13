@@ -6,8 +6,8 @@ from models.matcher import Matcher
 Epsilon = 1e-10
 
 MAIN_DIRECTORY = "C:\\Users\\nirjo\\Documents\\University\\Masters\\Computer Vision Aided Navigation\\VAN_ex"
-DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, r'dataset')
-DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, r'docs\db')
+DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')
+DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "docs\\db")
 
 DEFAULT_DETECTOR_NAME = "sift"
 DETECTOR = create_detector(DEFAULT_DETECTOR_NAME)
