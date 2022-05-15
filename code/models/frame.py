@@ -22,10 +22,10 @@ class Frame:
         self.id = idx
         self.left_camera = left_cam
         self.right_camera = right_cam
-        self.inlier_matches = List[FrameMatch]()
+        self.inlier_matches: List[FrameMatch] = []
         self.inlier_descriptors = []
         self.next_frame_match_count = 0
-        self.match_to_track_id = Dict[Tuple[cv2.KeyPoint, cv2.KeyPoint], int]()
+        self.match_to_track_id: Dict[Tuple[cv2.KeyPoint, cv2.KeyPoint], int] = dict()
         self._detect_and_match()
 
     def find_tracks(self, left_kp: cv2.KeyPoint) -> List[int]:
