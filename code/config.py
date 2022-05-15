@@ -3,7 +3,7 @@ import os
 from cv2_utils import create_detector
 from models.matcher import Matcher
 
-Epsilon = 1e-10
+Epsilon = 1e-8
 
 MAIN_DIRECTORY = "C:\\Users\\nirjo\\Documents\\University\\Masters\\Computer Vision Aided Navigation\\VAN_ex"
 DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')

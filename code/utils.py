@@ -23,14 +23,16 @@ def read_image_pair(idx: int):
     return img0, img1
 
 
-def read_first_camera_matrices():
+def read_first_camera_matrices(path: str = ""):
     """
     Load camera matrices from the KITTY dataset
     Returns the following matrices (ndarrays):
         K - Intrinsic camera matrix
         M_left, M_right - Extrinsic camera matrix (left, right)
     """
-    with open(f"{c.DATA_READ_PATH}\\sequences\\00\\calib.txt", "r") as f:
+    if path is None or path == "":
+        path = f"{c.DATA_READ_PATH}\\sequences\\00\\calib.txt"
+    with open(path, "r") as f:
         l1 = f.readline().split()[1:]  # skip first token
         l2 = f.readline().split()[1:]  # skip first token
     l1 = [float(i) for i in l1]

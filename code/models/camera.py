@@ -56,6 +56,12 @@ class Camera:
         t = self._extrinsic_matrix[:, 3:]
         return self.__verify_vector(t, 3, "Translation")
 
+    def get_right_rotation(self) -> np.ndarray:
+        return self._RightRotation
+
+    def get_right_translation(self) -> np.ndarray:
+        return self._RightTranslation
+
     def calculate_right_camera(self):
         """
         Calculates the extrinsic matrix of the right Camera, based on $self, and the first right Camera
