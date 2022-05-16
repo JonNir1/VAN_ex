@@ -25,6 +25,7 @@ class DBAdapter:
         dba = DBAdapter(data=[])
         dba.tracks_db = tracks_db
         dba.cameras_db = cameras_db
+        # TODO: init Camera Class attributes (K, right_rotation, right_translation)
         return dba
 
     def get_track_idxs(self, frame_idx: int) -> pd.Series:

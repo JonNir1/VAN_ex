@@ -31,6 +31,10 @@ class Camera:
     def extrinsic_matrix(self) -> np.ndarray:
         return self._extrinsic_matrix
 
+    @property
+    def right_translation(self):
+        return self._RightTranslation
+
     def project_3d_points(self, points: np.ndarray) -> np.ndarray:
         # returns a 2xN array of the projected points onto the Camera's plane
         assert points.shape[0] == 3 or points.shape[1] == 3, \
@@ -55,12 +59,6 @@ class Camera:
     def get_translation_vector(self) -> np.ndarray:
         t = self._extrinsic_matrix[:, 3:]
         return self.__verify_vector(t, 3, "Translation")
-
-    def get_right_rotation(self) -> np.ndarray:
-        return self._RightRotation
-
-    def get_right_translation(self) -> np.ndarray:
-        return self._RightTranslation
 
     def calculate_right_camera(self):
         """
@@ -105,4 +103,3 @@ class Camera:
 
     def __str__(self):
         return f"Cam_{self.idx}{self.side.value}"
-
