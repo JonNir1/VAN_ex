@@ -30,6 +30,7 @@ def compute_front_cameras(mutual_matches: List[MutualMatch], bl_cam: Camera, br_
 
 
 def _compute_front_left_camera(mutual_matches: List[MutualMatch], bl_cam: Camera, br_cam: Camera) -> Optional[Camera]:
+    # TODO: perform PnP with RELATIVE cameras (back_left_camera @ coordinate (0,0,0))
     next_idx = bl_cam.idx + 1
     K = bl_cam.intrinsic_matrix
     back_frame_matches = [m.get_frame_match(Position.BACK) for m in mutual_matches]
