@@ -52,6 +52,13 @@ class Camera:
         # returns a 3x4 ndarray that maps a 3D point ro its corresponding 2D point on the camera plain
         return self._K @ self._extrinsic_matrix
 
+    def calculate_coordinates(self) -> np.ndarray:
+        # Returns the 3D coordinates of the Camera in the GLOBAL (first Frame's) coordinate system
+        R = self.get_rotation_matrix()
+        t = self.get_translation_vector()
+        global_position = - (R.T @ t).reshape((3,))
+        return global_position
+
     def get_rotation_matrix(self) -> np.ndarray:
         r = self._extrinsic_matrix[:, :3]
         return self.__verify_matrix(r, 3, 3, "Rotation")

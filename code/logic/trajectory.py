@@ -16,9 +16,7 @@ def calculate_trajectory(frames: List[Frame]) -> np.ndarray:
         l_cam = fr.left_camera
         if l_cam is None:
             continue
-        R = l_cam.get_rotation_matrix()
-        t = l_cam.get_translation_vector()
-        trajectory[i] -= (R.T @ t).reshape((3,))
+        trajectory[i] = l_cam.calculate_coordinates()
     return trajectory.T
 
 
