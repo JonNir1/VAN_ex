@@ -45,8 +45,8 @@ class DBAdapter:
             assert max_len >= min_len, f"argument $max_len ({max_len}) must be >= to argument $min_len ({min_len})"
             relevant_indices = (track_lengths >= min_len) & (track_lengths <= max_len)
         track_with_len = (track_lengths[relevant_indices]).sample(1)
-        trk_idx = track_with_len.index.values[0]
-        length = track_with_len.values[0]
+        trk_idx = track_with_len.index.initial_estimates[0]
+        length = track_with_len.initial_estimates[0]
         return trk_idx, length
 
     def get_shared_tracks(self, frame_idx1: int, frame_idx2: int) -> pd.Series:

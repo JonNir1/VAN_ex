@@ -83,7 +83,7 @@ for frame_idx in reversed(long_track_frame_idxs):
     initial_estimate.insert(camera_symbol, gtsam_camera.pose)
     factor_err = factor.error(initial_estimate)
 
-    # store values:
+    # store initial_estimates:
     errs_dict[frame_idx] = (left_err, right_err, factor_err)
 
 # plot errors:
