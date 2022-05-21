@@ -34,6 +34,17 @@ class DBAdapter:
     def get_frame_idxs(self, track_idx: int) -> pd.Series:
         return pd.Series(self.tracks_db.xs(track_idx, level=DataBase.TRACKIDX).index)
 
+    def get_coordinates(self, frame_idx: int, track_idx: int) -> np.ndarray:
+        return np.array(self.tracks_db.loc[(frame_idx, track_idx),
+                                           [DataBase.X_LEFT, DataBase.X_RIGHT, DataBase.Y]])
+
+    def prune_short_tracks(self, min_length: int) -> pd.DataFrame:
+        # return a DataFrame containing only Tracks data for Tracks of length $min_length or higher
+        assert min_length >= 1, "Track length must be a positive integer"
+        track_lengths = self.get_track_lengths()
+        short_track_idxs = track_lengths[track_lengths < min_length].index
+        return self.tracks_db.drop(short_track_idxs, level=DataBase.TRACKIDX)
+
     def get_track_lengths(self) -> pd.Series:
         return self.tracks_db.groupby(level=DataBase.TRACKIDX).size()
 
@@ -53,10 +64,6 @@ class DBAdapter:
         idx1_tracks = self.tracks_db.index[self.tracks_db.index.get_level_values(DataBase.FRAMEIDX) == frame_idx1].droplevel(DataBase.FRAMEIDX)
         idx2_tracks = self.tracks_db.index[self.tracks_db.index.get_level_values(DataBase.FRAMEIDX) == frame_idx2].droplevel(DataBase.FRAMEIDX)
         return idx1_tracks.intersection(idx2_tracks).to_series().reset_index(drop=True)
-
-    def get_coordinates(self, frame_idx: int, track_idx: int) -> np.ndarray:
-        return np.array(self.tracks_db.loc[(frame_idx, track_idx),
-                                           [DataBase.X_LEFT, DataBase.X_RIGHT, DataBase.Y]])
 
     def to_pickle(self) -> bool:
         if not os.path.isdir(c.DATA_WRITE_PATH):
