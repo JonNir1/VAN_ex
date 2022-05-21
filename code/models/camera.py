@@ -1,3 +1,4 @@
+import gtsam
 import numpy as np
 
 import config as c
@@ -22,6 +23,19 @@ class Camera:
         self._extrinsic_matrix = self.__verify_matrix(extrinsic_mat, 3, 4, "Extrinsic")
         if self._K.size == 0:
             self._update_class_attributes()
+
+    @staticmethod
+    def from_pose3(idx: int, pose: gtsam.Pose3):
+        """
+        Returns a (left) Camera object based on the provided gtsam.Pose3 object
+        From a given [R|t] Pose3 matrix, the transformation to Camera matrix [R^*|t^*] is
+            R^* = R.T
+            t^* = - R.T @ t
+        """
+        R = pose.rotation().matrix().T
+        t = -R @ pose.translation().reshape((3, 1))
+        ext = np.hstack([R, t])
+        return Camera(idx=idx, side=Side.LEFT, extrinsic_mat=ext)
 
     @property
     def intrinsic_matrix(self) -> np.ndarray:
