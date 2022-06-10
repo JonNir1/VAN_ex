@@ -7,8 +7,11 @@ from models.database import DataBase
 
 class Bundle:
 
-    PointNoiseModel = gtsam.noiseModel.Isotropic.Sigma(3, 1)
-    PoseNoiseModel = gtsam.noiseModel.Diagonal.Sigmas(np.array([np.pi / 180, np.pi / 180, np.pi / 180, 1, 1, 1]))
+    _PixelCovariance, _LocationCovariance = 1, 1
+    _AngleCovariance = (np.pi / 180)**2
+    PointNoiseModel = gtsam.noiseModel.Isotropic.Sigma(3, _PixelCovariance)
+    PoseNoiseModel = gtsam.noiseModel.Diagonal.Sigmas(np.array([_AngleCovariance, _AngleCovariance, _AngleCovariance,
+                                                                _LocationCovariance, _LocationCovariance, _LocationCovariance]))
 
     def __init__(self, gtsam_frames: pd.Series, tracks_data: pd.DataFrame, landmark_symbols: pd.Series):
         # TODO: assert correct size of Bundle (5-20 frames)

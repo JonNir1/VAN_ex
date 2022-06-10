@@ -172,7 +172,7 @@ for i in range(3450):
     optimized_trajectory[i] = optimized_cam.calculate_coordinates()
 
 plt.scatter(estimated_trajectory.T[0], estimated_trajectory.T[2], marker="o", c='b', s=1, label="estimated (PnP)")
-plt.scatter(optimized_trajectory.T[0], optimized_trajectory.T[2], marker="x", s=1, c='r', label="optimized (GTSAM)")
+plt.scatter(optimized_trajectory.T[0], optimized_trajectory.T[2], marker="x", s=1, c='g', label="optimized (GTSAM)")
 plt.scatter(real_trajectory.T[0], real_trajectory.T[2], marker="*", s=1, c='k', label="ground truth")
 plt.legend()
 plt.show()
