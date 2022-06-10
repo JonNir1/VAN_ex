@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from typing import List
 
@@ -44,7 +45,8 @@ def read_poses():
         ts are 3x1 translation vectors
     """
     Rs, ts = [], []
-    f = open(f"{c.DATA_READ_PATH}\\poses\\00.txt", 'r')
+    trajectory_path = os.path.join(c.DATA_READ_PATH, 'poses', '00.txt')
+    f = open(trajectory_path, 'r')
     for i, line in enumerate(f.readlines()):
         mat = np.array(line.split(), dtype=float).reshape((3, 4))
         Rs.append(mat[:, :3])
