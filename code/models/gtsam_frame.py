@@ -1,5 +1,6 @@
 import gtsam
 from typing import NamedTuple
+from itertools import count
 
 from models.directions import Side
 from models.camera import Camera
@@ -10,11 +11,12 @@ class GTSAMFrame(NamedTuple):
     symbol: int
     pose: gtsam.Pose3
     stereo_params: gtsam.Cal3_S2Stereo
+    _counter = count(0)
 
     @staticmethod
     def from_camera(cam: Camera):
         assert cam.side == Side.LEFT, "must use left camera"
-        symbol = gtsam.symbol('c', cam.idx)
+        symbol = gtsam.symbol('c', next(GTSAMFrame._counter))
         pose = GTSAMFrame._calculate_pose(cam)
         stereo_params = GTSAMFrame._extract_stereo_params(cam)
         return GTSAMFrame(symbol, pose, stereo_params)

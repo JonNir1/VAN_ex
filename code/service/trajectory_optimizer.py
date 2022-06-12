@@ -27,7 +27,7 @@ class TrajectoryOptimizer:
         if verbose:
             print(f"Starting trajectory optimization for {num_keyframes - 1} Bundles...\n")
 
-        results: Dict[int, gtsam.Values] = dict()
+        all_results: Dict[int, gtsam.Values] = dict()
         for i in range(num_keyframes - 1):
             start_idx, end_idx = self.keyframe_indices[i], self.keyframe_indices[i+1]
 
@@ -38,7 +38,7 @@ class TrajectoryOptimizer:
             bundle_landmarks = self.landmark_symbols.loc[bundle_tracks.index.unique(level=DataBase.TRACKIDX)]
             bundle = Bundle(gtsam_frames=bundle_frames, tracks_data=bundle_tracks, landmark_symbols=bundle_landmarks)
             initial_error = bundle.error
-            results[i] = bundle.adjust()
+            all_results[i] = bundle.adjust()
             final_error = bundle.error
             self.total_optimized += initial_error - final_error
 
@@ -48,7 +48,7 @@ class TrajectoryOptimizer:
             last_frame = self.gtsam_frames.xs(bundle_frames.index.max())
             last_frame_replacement = GTSAMFrame(symbol=last_frame.symbol,
                                                 stereo_params=last_frame.stereo_params,
-                                                pose=results[i].atPose3(last_frame.symbol))
+                                                pose=all_results[i].atPose3(last_frame.symbol))
             self.gtsam_frames[bundle_frames.index.max()] = last_frame_replacement
 
             # print every minute if verbose:
@@ -62,7 +62,7 @@ class TrajectoryOptimizer:
             total_minutes = elapsed / 60
             print(f"Finished Bundle adjustment within {total_minutes:.2f} minutes")
             print(f"Mean error reduction per Bundle:\t{(self.total_optimized / (num_keyframes - 1)):.3f}")
-        return results
+        return all_results
 
     def extract_cameras(self, optimization_results: Dict[int, gtsam.Values]) -> List[Camera]:
         cameras: List[Camera] = []

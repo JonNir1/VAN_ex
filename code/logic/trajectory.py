@@ -4,6 +4,25 @@ from typing import List
 
 import config as c
 from models.frame import Frame
+from models.camera import Camera
+
+
+def calculate_trajectory_from_relative_cameras(cameras: List[Camera]) -> np.ndarray:
+    num_cams = len(cameras)
+    Rs = [cameras[0].get_rotation_matrix()]
+    ts = [cameras[0].get_translation_vector()]
+    locations = np.zeros((num_cams, 3))  # 3D coordinates
+    for i in range(1, num_cams):
+        relative_camera = cameras[i]
+        R_rel = relative_camera.get_rotation_matrix()
+        t_rel = relative_camera.get_translation_vector()
+        prev_R_abs, prev_t_abs = Rs[-1], ts[-1]
+        curr_R_abs = R_rel @ prev_R_abs
+        curr_t_abs = t_rel.reshape((3, 1)) + (R_rel @ prev_t_abs).reshape(3, 1)
+        Rs.append(curr_R_abs)
+        ts.append(curr_t_abs)
+        locations[i] = - (curr_R_abs.T @ curr_t_abs).reshape((3,))
+    return locations.T
 
 
 def calculate_trajectory(frames: List[Frame]) -> np.ndarray:
