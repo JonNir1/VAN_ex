@@ -10,8 +10,9 @@ from models.gtsam_frame import GTSAMFrame
 
 
 class Bundle2:
-    _PixelCovariance, _LocationCovariance = 1, 1
-    _AngleCovariance = (np.pi / 180) ** 2
+    _PixelCovariance = 1
+    _LocationCovariance = 0.01
+    _AngleCovariance = (0.1 * np.pi / 180) ** 2
     PointNoiseModel = gtsam.noiseModel.Isotropic.Sigma(3, _PixelCovariance)
     PoseNoiseModel = gtsam.noiseModel.Diagonal.Sigmas(np.array([_AngleCovariance, _AngleCovariance, _AngleCovariance,
                                                                 _LocationCovariance, _LocationCovariance,
