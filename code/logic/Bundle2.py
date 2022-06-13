@@ -107,6 +107,11 @@ class Bundle2:
             _, pose, stereo_params = frames[relative_frame_idx]
             stereo_cameras = gtsam.StereoCamera(pose, stereo_params)
             landmark_3D = stereo_cameras.backproject(gtsam.StereoPoint2(x_l, x_r, y))
+            if landmark_3D[2] <= 0 or landmark_3D[2] >= 400:
+                # the Z coordinate of the landmark is behind the camera or too distant
+                # do not include this landmark in the bundle
+                continue
+
             landmark_symbol = gtsam.symbol('l', track_idx)
             self.landmark_symbols[track_idx] = landmark_symbol
             self.initial_estimates.insert(landmark_symbol, landmark_3D)
