@@ -12,6 +12,7 @@ from models.camera import Camera
 from models.database import DataBase
 from logic.trajectory import read_ground_truth_trajectory
 from logic.db_adapter import DBAdapter
+from logic.PoseGraph import PoseGraph
 from service.TrajectoryOptimizer2 import TrajectoryOptimizer2
 
 # change matplotlib's backend
@@ -66,3 +67,31 @@ plot.plot_trajectory(fignum=0, values=bundle0.optimized_estimates, scale=1,
 plt.show()
 
 
+#################################
+#         Question 6.2          #
+#       Build Pose Graph        #
+#################################
+
+pg = PoseGraph(traj_opt.bundles)
+pre_err = pg.error
+print(f"Pre-Optimization Error:\t{pre_err:.5f}")
+pg.optimize()
+post_err = pg.error
+print(f"Post-Optimization Error:\t{post_err:.5f}")
+
+# plot keyframe locations provided as initial estimates
+plt.clf()
+plot.plot_trajectory(fignum=1, values=pg._initial_estimates, scale=1, title="Pose Graph :: Initial Estimates")
+plt.show()
+
+# plot keyframe locations after optimization
+plt.clf()
+plot.plot_trajectory(fignum=2, values=pg._optimized_estimates, scale=1, title="Pose Graph :: Optimization Results")
+plt.show()
+
+# plot keyframe locations after optimization - with covariances
+marginals = gtsam.Marginals(pg._graph, pg._optimized_estimates)
+plt.clf()
+plot.plot_trajectory(fignum=3, values=pg._optimized_estimates, scale=1, marginals=marginals,
+                     title="Pose Graph :: Optimization Results with Covariances")
+plt.show()
