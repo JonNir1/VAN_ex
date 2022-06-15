@@ -13,7 +13,7 @@ from logic.pnp import compute_front_cameras
 class Ransac:
 
     MinimalSetSize = 4
-    DefaultSuccessProbability = 0.99
+    DefaultSuccessProbability = 0.9999
     MaxDistanceForSupporter = 2
 
     def __init__(self, success_prob: float = DefaultSuccessProbability):

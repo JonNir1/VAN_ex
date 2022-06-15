@@ -9,7 +9,7 @@ from logic.PnPLogic import pnp
 
 class RANSAC:
     MinimalSetSize = 4
-    DefaultSuccessProbability = 0.99
+    DefaultSuccessProbability = 0.9999
     MaxDistanceForSupporter = 2
 
     def __init__(self, success_prob: float = DefaultSuccessProbability):
