@@ -54,23 +54,25 @@ class PoseGraph:
             next Bundle)
         """
         # extract the keyframe's relative pose (relative to bundle's first frame)
-        last_frame_idx = max(b.frame_symbols.keys())
-        kf_symbol = b.frame_symbols[last_frame_idx]
-        kf_pose = b.optimized_estimates.atPose3(kf_symbol)
-        kf_relative_camera = Camera.from_pose3(last_frame_idx, kf_pose)
+        start_frame_idx, end_frame_idx = min(b.frame_symbols.keys()), max(b.frame_symbols.keys())
+        start_kf_symbol, end_kf_symbol = b.frame_symbols[start_frame_idx], b.frame_symbols[end_frame_idx]
+        start_kf_pose = b.optimized_estimates.atPose3(start_kf_symbol)
+        end_kf_pose = b.optimized_estimates.atPose3(end_kf_symbol)
+        between_pose = start_kf_pose.between(end_kf_pose)
+        kf_relative_camera = Camera.from_pose3(end_frame_idx, between_pose)
 
         # calculate the pose in global (kf0) coordinates:
         prev_R, prev_t = prev_cam.get_rotation_matrix(), prev_cam.get_translation_vector()
         rel_R, rel_t = kf_relative_camera.get_rotation_matrix(), kf_relative_camera.get_translation_vector()
         R = rel_R @ prev_R
         t = rel_t + rel_R @ prev_t
-        kf_global_camera = Camera(last_frame_idx, Side.LEFT, np.hstack([R, t]))
+        end_kf_global_camera = Camera(end_frame_idx, Side.LEFT, np.hstack([R, t]))
 
         # add the camera's global pose to the initial estimate
-        keyframe_global_gtsam_frame = GTSAMFrame.from_camera(kf_global_camera)
-        self._initial_estimates.insert(kf_symbol, keyframe_global_gtsam_frame.pose)
-        self.keyframe_symbols[last_frame_idx] = kf_symbol
-        return kf_global_camera
+        end_kf_global_gtsam_frame = GTSAMFrame.from_camera(end_kf_global_camera)
+        self._initial_estimates.insert(end_kf_symbol, end_kf_global_gtsam_frame.pose)
+        self.keyframe_symbols[end_frame_idx] = end_kf_symbol
+        return end_kf_global_camera
 
     def __add_between_keyframe_factor(self, b: Bundle2):
         # extract the start & end keyframes' symbols from the bundle
