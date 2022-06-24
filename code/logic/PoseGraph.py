@@ -74,7 +74,7 @@ class PoseGraph:
                     print(f"\tError Difference:\t{prev_err - curr_err}\n")
         self._is_optimized = True
 
-    def optimize(self):
+    def optimize_without_loops(self):
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, self._initial_estimates)
         self._optimized_estimates = optimizer.optimize()
         self._is_optimized = True

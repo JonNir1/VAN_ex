@@ -75,7 +75,7 @@ plt.show()
 pg = PoseGraph(traj_opt.bundles)
 pre_err = pg.error
 print(f"Pre-Optimization Error:\t{pre_err:.5f}")
-pg.optimize()
+pg.optimize_without_loops()
 post_err = pg.error
 print(f"Post-Optimization Error:\t{post_err:.5f}")
 
