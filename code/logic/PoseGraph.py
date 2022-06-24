@@ -4,6 +4,7 @@ from typing import List, Dict
 
 from models.directions import Side
 from models.camera import Camera
+from models.Graph import Graph
 from models.gtsam_frame import GTSAMFrame
 from logic.Bundle2 import Bundle2
 
@@ -16,6 +17,7 @@ class PoseGraph:
         self._initial_estimates = gtsam.Values()
         self._optimized_estimates = gtsam.Values()
         self._factor_graph = gtsam.NonlinearFactorGraph()
+        self._locations_graph = Graph()
         self._preprocess_bundles(bundles)
 
     @property
@@ -40,6 +42,7 @@ class PoseGraph:
         self.keyframe_symbols[0] = kf0_symbol
         self._initial_estimates.insert(kf0_symbol, kf0_pose)
         self._factor_graph.add(prior_factor)
+        self._locations_graph.create_vertex(frame_idx=0, symbol=kf0_symbol)
 
         prev_symbol = kf0_symbol
         prev_cam = Camera.from_pose3(0, kf0_pose)
@@ -58,6 +61,10 @@ class PoseGraph:
             noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
             factor = gtsam.BetweenFactorPose3(prev_symbol, keyframe_symbol, relative_pose, noise_model)
             self._factor_graph.add(factor)
+
+            # add current keyframe to the locations-graph, with weighted edge to previous keyframe:
+            v = self._locations_graph.create_vertex(frame_idx=keyframe_idx, symbol=keyframe_symbol)
+            e = self._locations_graph.create_or_update_edge(v1_id=v.index - 1, v2_id=v.index, cov=relative_cov)
 
             # update values for next iteration:
             prev_symbol = keyframe_symbol
