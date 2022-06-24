@@ -25,6 +25,14 @@ class Camera:
             self._update_class_attributes()
 
     @staticmethod
+    def create_default():
+        # creates a Camera located at point (0, 0, 0), for reference of all future Cameras
+        R = np.eye(3)
+        t = np.zeros((3, 1))
+        ext = np.hstack([R, t])
+        return Camera(idx=0, side=Side.LEFT, extrinsic_mat=ext)
+
+    @staticmethod
     def from_pose3(idx: int, pose: gtsam.Pose3):
         """
         Returns a (left) Camera object based on the provided gtsam.Pose3 object
