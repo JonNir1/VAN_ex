@@ -1,7 +1,7 @@
 import gtsam
 import numpy as np
 import pandas as pd
-from typing import List, Optional
+from typing import List, Dict, Optional
 
 from models.directions import Side
 from models.camera import Camera
@@ -129,21 +129,21 @@ class Bundle2:
         frames = self.__create_and_process_frames(relative_cameras)
         self.__create_and_process_landmarks(frames, tracks_data)
 
-    def __create_and_process_frames(self, relative_cameras: pd.Series) -> List[GTSAMFrame]:
+    def __create_and_process_frames(self, relative_cameras: pd.Series) -> Dict[int, GTSAMFrame]:
         cameras = self.__calculate_cameras(relative_cameras)
-        frames = []
+        frames = dict()
         for i, cam in enumerate(cameras):
             curr_frame = GTSAMFrame.from_camera(cam)
             self.initial_estimates.insert(curr_frame.symbol, curr_frame.pose)
             self.frame_symbols[cam.idx] = curr_frame.symbol
-            frames.append(curr_frame)
+            frames[cam.idx] = curr_frame
             if i == 0:
                 # add Prior for the first frame in the Bundle
                 prior_factor = gtsam.PriorFactorPose3(curr_frame.symbol, curr_frame.pose, self.PoseNoiseModel)
                 self.graph.add(prior_factor)
         return frames
 
-    def __create_and_process_landmarks(self, frames: List[GTSAMFrame], tracks_data: pd.DataFrame):
+    def __create_and_process_landmarks(self, frames: Dict[int, GTSAMFrame], tracks_data: pd.DataFrame):
         first_frame_idx = tracks_data.index.unique(level=DataBase.FRAMEIDX).min()
         for track_idx in tracks_data.index.unique(level=DataBase.TRACKIDX):
             single_track_data = tracks_data.xs(track_idx, level=DataBase.TRACKIDX)
@@ -151,8 +151,7 @@ class Bundle2:
             # add initial est. of the landmark position
             last_frame_idx = single_track_data.index.max()
             x_l, x_r, y = single_track_data.xs(last_frame_idx)
-            relative_frame_idx = last_frame_idx - first_frame_idx
-            _, pose, stereo_params = frames[relative_frame_idx]
+            _, pose, stereo_params = frames[last_frame_idx]
             stereo_cameras = gtsam.StereoCamera(pose, stereo_params)
             landmark_3D = stereo_cameras.backproject(gtsam.StereoPoint2(x_l, x_r, y))
             if landmark_3D[2] <= 0 or landmark_3D[2] >= 400:
@@ -168,8 +167,7 @@ class Bundle2:
             for fr_idx in single_track_data.index:
                 x_l, x_r, y = single_track_data.xs(fr_idx)
                 stereo_point2D = gtsam.StereoPoint2(x_l, x_r, y)
-                relative_frame_idx = fr_idx - first_frame_idx
-                camera_symbol, _, stereo_params = frames[relative_frame_idx]
+                camera_symbol, _, stereo_params = frames[fr_idx]
                 factor = gtsam.GenericStereoFactor3D(stereo_point2D, self.PointNoiseModel, camera_symbol,
                                                      landmark_symbol, stereo_params)
                 self.graph.add(factor)
