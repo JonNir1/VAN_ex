@@ -15,17 +15,17 @@ class PoseGraph:
         self._is_optimized = False
         self._initial_estimates = gtsam.Values()
         self._optimized_estimates = gtsam.Values()
-        self._graph = gtsam.NonlinearFactorGraph()
+        self._factor_graph = gtsam.NonlinearFactorGraph()
         self._preprocess_bundles(bundles)
 
     @property
     def error(self):
         if self._is_optimized:
-            return self._graph.error(self._optimized_estimates)
-        return self._graph.error(self._initial_estimates)
+            return self._factor_graph.error(self._optimized_estimates)
+        return self._factor_graph.error(self._initial_estimates)
 
     def optimize(self):
-        optimizer = gtsam.LevenbergMarquardtOptimizer(self._graph, self._initial_estimates)
+        optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, self._initial_estimates)
         self._optimized_estimates = optimizer.optimize()
         self._is_optimized = True
 
@@ -39,7 +39,7 @@ class PoseGraph:
         prior_factor = gtsam.PriorFactorPose3(kf0_symbol, kf0_pose, pose_noise)
         self.keyframe_symbols[0] = kf0_symbol
         self._initial_estimates.insert(kf0_symbol, kf0_pose)
-        self._graph.add(prior_factor)
+        self._factor_graph.add(prior_factor)
 
         prev_cam = Camera.from_pose3(0, kf0_pose)
         for b in bundles:
@@ -96,6 +96,6 @@ class PoseGraph:
         noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
         factor = gtsam.BetweenFactorPose3(start_kf_posegraph_symbol, end_kf_posegraph_symbol,
                                           relative_pose, noise_model)
-        self._graph.add(factor)
+        self._factor_graph.add(factor)
 
 
