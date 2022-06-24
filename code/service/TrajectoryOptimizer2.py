@@ -55,7 +55,7 @@ class TrajectoryOptimizer2:
     def extract_all_relative_cameras(self) -> List[Camera]:
         cameras = []
         for i, bundle in enumerate(self.bundles):
-            relative_cameras = bundle.extract_relative_cameras()
+            relative_cameras = bundle.extract_all_relative_cameras()
             if i != 0:
                 # ignore the first camera in each bundle (except the first bundle)
                 relative_cameras = relative_cameras[1:]

@@ -187,7 +187,7 @@ plot_trajectory(fignum=0, values=first_bundle.optimized_estimates, title="First 
 plot_3d_points(fignum=1, values=first_bundle.optimized_estimates, title="First Bundle Landmarks")
 plt.show()
 
-bundle_track = calculate_trajectory_from_relative_cameras(first_bundle.extract_relative_cameras())
+bundle_track = calculate_trajectory_from_relative_cameras(first_bundle.extract_all_relative_cameras())
 bundle_gt = real_trajectory[:, :15]
 euclidean_distances = np.linalg.norm(bundle_track - bundle_gt, ord=2, axis=0)
 

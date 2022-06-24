@@ -90,7 +90,7 @@ plot.plot_trajectory(fignum=2, values=pg._optimized_estimates, scale=1, title="P
 plt.show()
 
 # plot keyframe locations after optimization - with covariances
-marginals = gtsam.Marginals(pg._graph, pg._optimized_estimates)
+marginals = gtsam.Marginals(pg._factor_graph, pg._optimized_estimates)
 plt.clf()
 plot.plot_trajectory(fignum=3, values=pg._optimized_estimates, scale=1, marginals=marginals,
                      title="Pose Graph :: Optimization Results with Covariances")

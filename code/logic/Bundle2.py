@@ -1,7 +1,7 @@
 import gtsam
 import numpy as np
 import pandas as pd
-from typing import List
+from typing import List, Optional
 
 from models.directions import Side
 from models.camera import Camera
@@ -19,6 +19,7 @@ class Bundle2:
                                                                 _LocationCovariance]))
 
     def __init__(self, relative_cameras: pd.Series, tracks_data: pd.DataFrame):
+        self.is_optimized = False
         self.frame_symbols = dict()
         self.landmark_symbols = dict()
         self.initial_estimates = gtsam.Values()
@@ -26,14 +27,61 @@ class Bundle2:
         self.graph = gtsam.NonlinearFactorGraph()
         self._build_bundle(relative_cameras, tracks_data)
 
+    @property
+    def start_frame_index(self) -> int:
+        return min(self.frame_symbols.keys())
+
+    @property
+    def start_frame_symbol(self) -> int:
+        idx = self.start_frame_index
+        return self.frame_symbols[idx]
+
+    @property
+    def end_frame_index(self) -> int:
+        return max(self.frame_symbols.keys())
+
+    @property
+    def end_frame_symbol(self) -> int:
+        idx = self.end_frame_index
+        return self.frame_symbols[idx]
+
     def adjust(self):
         optimizer = gtsam.LevenbergMarquardtOptimizer(self.graph, self.initial_estimates)
         self.optimized_estimates = optimizer.optimize()
+        self.is_optimized = True
 
     def calculate_error(self, est: gtsam.Values) -> float:
         return self.graph.error(est)
 
-    def extract_relative_cameras(self) -> List[Camera]:
+    def calculate_keyframes_relative_pose(self) -> gtsam.Pose3:
+        """
+        Returns a Pose3 object representing the relative movement between the Bundle's start- end-frame
+        """
+        if not self.is_optimized:
+            raise RuntimeError("Cannot compute relative Camera for non-optimized Bundle")
+        start_frame_idx, start_frame_symbol = self.start_frame_index, self.start_frame_symbol
+        end_frame_idx, end_frame_symbol = self.end_frame_index, self.end_frame_symbol
+        start_pose = self.optimized_estimates.atPose3(start_frame_symbol)
+        end_pose = self.optimized_estimates.atPose3(end_frame_symbol)
+        between_pose = start_pose.between(end_pose)
+        return between_pose
+
+    def calculate_keyframes_relative_covariance(self) -> np.ndarray:
+        """
+        Returns a 6x6 matrix representing the relative covariance between start- and end-frame in the Bundle
+        """
+        start_kf_symbol = self.start_frame_symbol
+        end_kf_symbol = self.end_frame_symbol
+        keys = gtsam.KeyVector()
+        keys.append(start_kf_symbol)
+        keys.append(end_kf_symbol)
+        marginals = gtsam.Marginals(self.graph, self.optimized_estimates)
+        marginal_cov = marginals.jointMarginalCovariance(keys).fullMatrix()
+        information = np.linalg.inv(marginal_cov)
+        relative_cov = np.linalg.inv(information[-6:, -6:])
+        return relative_cov
+
+    def extract_all_relative_cameras(self) -> List[Camera]:
         """
         Returns a list of Cameras object based on the optimized gtsam.Pose3 objects in self.optimized_values.
         The Cameras are aligned relatively to the previous Camera in the Bundle, and NOT according to the first
