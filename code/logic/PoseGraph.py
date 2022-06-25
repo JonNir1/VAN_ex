@@ -43,42 +43,42 @@ class PoseGraph:
         keyframe_indices = sorted(self.keyframe_symbols.keys())
         max_loops_to_close = len(keyframe_indices) + 1 if max_loops_to_close is None else max_loops_to_close
 
-        closed_loops = 0
-        while closed_loops <= max_loops_to_close:
-            for i, front_idx in enumerate(keyframe_indices):
-                front_symbol = self.keyframe_symbols[front_idx]
-                for j in range(
-                        i - self.KeyframeDistanceThreshold):  # do not match bundles that are too close to each other
-                    back_idx = keyframe_indices[j]
-                    if not self._is_within_mahalanobis_range(intermediate_results, front_idx, back_idx):
-                        # this pair is not a possible loop, continue to next pair
-                        continue
-                    back_frame, front_frame, matches, supporters = self._match_possible_loop(front_idx, back_idx)
-                    outlier_percent = 100 * (len(matches) - len(supporters)) / len(matches)
-                    if outlier_percent > self.OutlierPercentThreshold:
-                        # there are not enough supporters to justify loop on this pair
-                        continue
+        closed_loops_count = 0
+        for i, front_idx in enumerate(keyframe_indices):
+            front_symbol = self.keyframe_symbols[front_idx]
+            for j in range(i - self.KeyframeDistanceThreshold):  # do not match bundles that are too close to each other
+                if closed_loops_count > max_loops_to_close:
+                    break
+                back_idx = keyframe_indices[j]
+                if not self._is_within_mahalanobis_range(intermediate_results, front_idx, back_idx):
+                    # this pair is not a possible loop, continue to next pair
+                    continue
+                back_frame, front_frame, matches, supporters = self._match_possible_loop(front_idx, back_idx)
+                outlier_percent = 100 * (len(matches) - len(supporters)) / len(matches)
+                if outlier_percent > self.OutlierPercentThreshold:
+                    # there are not enough supporters to justify loop on this pair
+                    continue
 
-                    # need to add this as constraint to Factor Graph & as edge Locations Graph
-                    if verbose:
-                        print(f"Adding edge between Frame{front_idx} and Frame{back_idx}:")
-                    relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame,
-                                                                                     supporters)
-                    noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
-                    back_symbol = self.keyframe_symbols[back_idx]
-                    factor = gtsam.BetweenFactorPose3(back_symbol, front_symbol, relative_pose, noise_model)
-                    self._factor_graph.add(factor)
+                # need to add this as constraint to Factor Graph & as edge Locations Graph
+                if verbose:
+                    print(f"Adding edge #{closed_loops_count + 1} between Frame{front_idx} and Frame{back_idx}:")
+                relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame,
+                                                                                 supporters)
+                noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
+                back_symbol = self.keyframe_symbols[back_idx]
+                factor = gtsam.BetweenFactorPose3(back_symbol, front_symbol, relative_pose, noise_model)
+                self._factor_graph.add(factor)
 
-                    # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
-                    prev_err = self._factor_graph.error(intermediate_results)
-                    optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
-                    intermediate_results = optimizer.optimize()
-                    curr_err = self._factor_graph.error(intermediate_results)
-                    closed_loops = closed_loops + 1
+                # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
+                prev_err = self._factor_graph.error(intermediate_results)
+                optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
+                intermediate_results = optimizer.optimize()
+                curr_err = self._factor_graph.error(intermediate_results)
+                closed_loops_count = closed_loops_count + 1
 
-                    if verbose:
-                        print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
-                        print(f"\tError Difference:\t{prev_err - curr_err}\n")
+                if verbose:
+                    print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
+                    print(f"\tError Difference:\t{prev_err - curr_err}\n")
 
         # final optimization just to be sure
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
