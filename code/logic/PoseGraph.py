@@ -1,6 +1,6 @@
 import gtsam
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import config as c
 from models.directions import Side
@@ -36,42 +36,49 @@ class PoseGraph:
             return self._factor_graph.error(self._optimized_estimates)
         return self._factor_graph.error(self._initial_estimates)
 
-    def optimize_with_loops(self, verbose=False):
+    def optimize_with_loops(self, max_loops_to_close: Optional[int] = None, verbose=False):
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, self._initial_estimates)
         intermediate_results = optimizer.optimize()
 
         keyframe_indices = sorted(self.keyframe_symbols.keys())
-        for i, front_idx in enumerate(keyframe_indices):
-            front_symbol = self.keyframe_symbols[front_idx]
-            for j in range(i - self.KeyframeDistanceThreshold):  # do not match bundles that are too close to each other
-                back_idx = keyframe_indices[j]
-                if not self._is_within_mahalanobis_range(intermediate_results, front_idx, back_idx):
-                    # this pair is not a possible loop, continue to next pair
-                    continue
-                back_frame, front_frame, matches, supporters = self._match_possible_loop(front_idx, back_idx)
-                outlier_percent = 100 * (len(matches) - len(supporters)) / len(matches)
-                if outlier_percent > self.OutlierPercentThreshold:
-                    # there are not enough supporters to justify loop on this pair
-                    continue
+        max_loops_to_close = len(keyframe_indices) + 1 if max_loops_to_close is None else max_loops_to_close
 
-                # need to add this as constraint to Factor Graph & as edge Locations Graph
-                if verbose:
-                    print(f"Adding edge between Frame{front_idx} and Frame{back_idx}:")
-                relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame, supporters)
-                noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
-                back_symbol = self.keyframe_symbols[back_idx]
-                factor = gtsam.BetweenFactorPose3(back_symbol, front_symbol, relative_pose, noise_model)
-                self._factor_graph.add(factor)
+        closed_loops = 0
+        while closed_loops <= max_loops_to_close:
+            for i, front_idx in enumerate(keyframe_indices):
+                front_symbol = self.keyframe_symbols[front_idx]
+                for j in range(
+                        i - self.KeyframeDistanceThreshold):  # do not match bundles that are too close to each other
+                    back_idx = keyframe_indices[j]
+                    if not self._is_within_mahalanobis_range(intermediate_results, front_idx, back_idx):
+                        # this pair is not a possible loop, continue to next pair
+                        continue
+                    back_frame, front_frame, matches, supporters = self._match_possible_loop(front_idx, back_idx)
+                    outlier_percent = 100 * (len(matches) - len(supporters)) / len(matches)
+                    if outlier_percent > self.OutlierPercentThreshold:
+                        # there are not enough supporters to justify loop on this pair
+                        continue
 
-                # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
-                prev_err = self._factor_graph.error(intermediate_results)
-                optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
-                intermediate_results = optimizer.optimize()
-                curr_err = self._factor_graph.error(intermediate_results)
+                    # need to add this as constraint to Factor Graph & as edge Locations Graph
+                    if verbose:
+                        print(f"Adding edge between Frame{front_idx} and Frame{back_idx}:")
+                    relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame,
+                                                                                     supporters)
+                    noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
+                    back_symbol = self.keyframe_symbols[back_idx]
+                    factor = gtsam.BetweenFactorPose3(back_symbol, front_symbol, relative_pose, noise_model)
+                    self._factor_graph.add(factor)
 
-                if verbose:
-                    print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
-                    print(f"\tError Difference:\t{prev_err - curr_err}\n")
+                    # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
+                    prev_err = self._factor_graph.error(intermediate_results)
+                    optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
+                    intermediate_results = optimizer.optimize()
+                    curr_err = self._factor_graph.error(intermediate_results)
+                    closed_loops = closed_loops + 1
+
+                    if verbose:
+                        print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
+                        print(f"\tError Difference:\t{prev_err - curr_err}\n")
 
         # final optimization just to be sure
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
