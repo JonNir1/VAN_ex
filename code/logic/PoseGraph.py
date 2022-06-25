@@ -72,6 +72,10 @@ class PoseGraph:
                 if verbose:
                     print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
                     print(f"\tError Difference:\t{prev_err - curr_err}\n")
+
+        # final optimization just to be sure
+        optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
+        self._optimized_estimates = optimizer.optimize()
         self._is_optimized = True
 
     def optimize_without_loops(self):
