@@ -41,13 +41,9 @@ class Camera:
         right_trans = Camera._RightRotation @ self.t + Camera._RightTranslation
         return Camera.from_Rt(right_rot, right_trans)
 
-    def project(self, landmarks) -> np.ndarray:
-        assert landmarks.shape[0] == 3 or landmarks.shape[1] == 3, f"landmarks should be 3D points"
-        landmarks = landmarks.T if landmarks.shape[0] != 3 else landmarks
-        K, R, t = self.K, self.R, self.t
-        projections_3d = K @ (R @ landmarks + t)  # non normalized homogeneous coordinates of shape 3xN
-        hom_coordinates = projections_3d / (projections_3d[2] + c.Epsilon)  # add epsilon to avoid 0 division
-        return hom_coordinates[:2]  # return only first 2 rows (x,y coordinates)
+    def calculate_projection_matrix(self):
+        P = self.K @ self._M
+        return P
 
     @classmethod
     def __init_class_attributes(cls) -> bool:
