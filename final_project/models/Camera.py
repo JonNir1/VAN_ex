@@ -6,7 +6,7 @@ import final_project.utils as u
 
 class Camera:
 
-    _is_init: bool = True
+    _is_init: bool = False
     _K: np.ndarray = np.array([])
     _RightRotation: np.ndarray = np.array([])
     _RightTranslation: np.ndarray = np.array([])
@@ -22,6 +22,13 @@ class Camera:
         Camera.__verify_shape(R, 3, 3, "Rotation")
         Camera.__verify_shape(t, 3, 1, "Translation")
         return Camera(np.hstack([R, t]))
+
+    @staticmethod
+    def read_initial_cameras():
+        _, M_left, M_right = u.read_first_camera_matrices()
+        left_cam = Camera(M_left)
+        right_cam = Camera(M_right)
+        return left_cam, right_cam
 
     @property
     def K(self) -> np.ndarray:
@@ -57,7 +64,7 @@ class Camera:
             K, _, M_right = u.read_first_camera_matrices()
             Camera._K = K
             Camera._RightRotation = M_right[:, :-1]
-            Camera._RightTranslation = M_right[:, -1]
+            Camera._RightTranslation = M_right[:, -1].reshape((3, 1))
         return True
 
 
@@ -67,6 +74,6 @@ class Camera:
         array_type = "Vector" if ncols == 1 else "Matrix"
         assert isinstance(mat, np.ndarray), f"{name} {array_type} should be a numpy array"
         assert mat.size != 0, f"Cannot provide an empty {name} {array_type}"
-        assert mat.shape[0] == nrows, f"{name} {array_type}'s n_rows should be f{nrows}, not f{mat.shape[0]}"
-        assert mat.shape[1] == ncols, f"{name} {array_type}'s n_cols should be f{ncols}, not f{mat.shape[1]}"
+        assert mat.shape[0] == nrows, f"{name} {array_type}'s n_rows should be {nrows}, not {mat.shape[0]}"
+        assert mat.shape[1] == ncols, f"{name} {array_type}'s n_cols should be {ncols}, not {mat.shape[1]}"
 

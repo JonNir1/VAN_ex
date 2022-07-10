@@ -1,24 +1,25 @@
 import cv2
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Optional
 
 import final_project.config as c
 from final_project.models.Camera import Camera
 
 
-def triangulate(pixels1: np.ndarray, pixels2: np.ndarray, left_cam: Camera) -> np.ndarray:
+def triangulate(pixels1: np.ndarray, pixels2: np.ndarray,
+                left_cam: Camera, right_cam: Optional[Camera] = None) -> np.ndarray:
     """
     Reconstructs 3D points from arrays of 2D matched pixels, and the (left) Camera object that created the pixels.
     :param pixels1: a matrix of shape 2×N of the left camera's pixels
     :param pixels2: a matrix of shape 2×N of the right camera's pixels
-    :param left_cam: if provided, triangulates the points relative to this camera (and the equivalent right camera).
-            if not provided, triangulate based on the 0-located left camera (and the equivalent right camera).
+    :param left_cam: triangulates $pixels1 relative to this camera
+    :param right_cam: if provided, triangulates $pixels2 relative to this camera. If not, it is inferred from $left_cam
 
     :raises: AssertionError if the pixel arrays are not 2D with same amount of samples (2×N)
     :return: a 3xN matrix containing (X, Y, Z) landmark coordinates based on the input pixel arrays.
     """
     pixels1, pixels2 = __verify_input(pixels1, pixels2)
-    right_cam = left_cam.get_right_camera()
+    right_cam = right_cam if right_cam is not None else left_cam.get_right_camera()
     left_proj_mat = left_cam.calculate_projection_matrix()
     right_proj_mat = right_cam.calculate_projection_matrix()
     X_4d = cv2.triangulatePoints(left_proj_mat, right_proj_mat, pixels1, pixels2)
