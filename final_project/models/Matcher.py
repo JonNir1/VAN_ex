@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 import final_project.utils as u
 
@@ -27,13 +27,12 @@ class Matcher:
         img_l, img_r = u.read_images(idx)
         kps_l, descs_l = self._detector.detectAndCompute(img_l, None)
         kps_r, descs_r = self._detector.detectAndCompute(img_r, None)
-        matches = self._match_2nn(descs_l, descs_r) if self._use_2nn else self._matcher.match(descs_l, descs_r)
-
+        matched_indices = self.match_descriptors(descs_l, descs_r)
         features_list, descriptors_list = [], []
-        for m in matches:
-            kpl, kpr = kps_l[m.queryIdx], kps_r[m.trainIdx]
-            xl, yl = kpl.pt
-            xr, yr = kpr.pt
+        for idx_l, idx_r in matched_indices:
+            kp_l, kp_r = kps_l[idx_l], kps_r[idx_r]
+            xl, yl = kp_l.pt
+            xr, yr = kp_r.pt
             if abs(yl - yr) >= Matcher._MaxVerticalDistanceForInlier:
                 # this match is not on the Epi-Polar line - ignore it
                 continue
@@ -41,11 +40,22 @@ class Matcher:
                 # this match is triangulated *behind* the cameras - ignore it
                 continue
             features_list.append([xl, yl, xr, yr])
-            descriptors_list.append(descs_l[m.queryIdx])
+            descriptors_list.append(descs_l[idx_l])
         features = np.array(features_list)
         descriptors = np.array(descriptors_list)
         assert features.shape[0] == descriptors.shape[0], "Error extracting matching features"
         return features, descriptors
+
+    def match_descriptors(self, descriptors1, descriptors2) -> List[Tuple[int, int]]:
+        """
+        Returns a list of pairs, each pair has the indices of the matched descriptors between the two input lists.
+        @:raises AssertionError if the number of matched indices do not equal.
+        """
+        matches = self._match_2nn(descriptors1, descriptors2) if self._use_2nn else self._matcher.match(descriptors1, descriptors2)
+        matched_indices1 = [m.queryIdx for m in matches]  # indices of matches from $features1
+        matched_indices2 = [m.trainIdx for m in matches]  # indices of matches from $features2
+        assert len(matched_indices1) == len(matched_indices2), "match counts are not equal"
+        return list(zip(matched_indices1, matched_indices2))
 
     def _match_2nn(self, query_desc, train_desc):
         matches_2nn = self._matcher.knnMatch(query_desc, train_desc, 2)
