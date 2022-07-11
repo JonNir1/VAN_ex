@@ -11,6 +11,7 @@ DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')
 
 
 Epsilon = 1e-8
+NUM_FRAMES = 3450
 
 
 _DEFAULT_DETECTOR_NAME = "sift"

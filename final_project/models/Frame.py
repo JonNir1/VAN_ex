@@ -8,12 +8,9 @@ from final_project.models.Matcher import Matcher
 
 class Frame:
 
-    _MaxIndex = 3449
-    _MaxVerticalDistanceForInlier = 1
-
     def __init__(self, idx: int, left_cam: Optional[Camera] = None, matcher: Matcher = c.DEFAULT_MATCHER):
-        if idx < 0 or idx > Frame._MaxIndex:
-            raise IndexError(f"Frame index must be between 0 and {Frame._MaxIndex}, not {idx}")
+        if idx < 0 or idx >= c.NUM_FRAMES:
+            raise IndexError(f"Frame index must be between 0 and {c.NUM_FRAMES - 1}, not {idx}")
         self.idx: int = idx
         self.left_cam = left_cam
         self.features, self.descriptors = matcher.match_within_frame(idx)
