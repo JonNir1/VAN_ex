@@ -7,7 +7,7 @@ import final_project.utils as u
 
 class Matcher:
     _2NN_Ratio: float = 0.75
-    _MaxVerticalDistanceForInlier = 1
+    _InlierVerticalThreshold = 1
 
     def __init__(self, detector_type: str, matcher_type: str, use_crosscheck=False, use_2nn=False):
         self._use_2nn = use_2nn
@@ -33,7 +33,7 @@ class Matcher:
             kp_l, kp_r = kps_l[idx_l], kps_r[idx_r]
             xl, yl = kp_l.pt
             xr, yr = kp_r.pt
-            if abs(yl - yr) >= Matcher._MaxVerticalDistanceForInlier:
+            if abs(yl - yr) >= Matcher._InlierVerticalThreshold:
                 # this match is not on the Epi-Polar line - ignore it
                 continue
             if xl <= xr:
