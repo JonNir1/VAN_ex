@@ -30,8 +30,8 @@ class Camera:
         right_cam = Camera(M_right)
         return left_cam, right_cam
 
-    @property
-    def K(self) -> np.ndarray:
+    @classmethod
+    def K(cls) -> np.ndarray:
         return Camera._K
 
     @property
@@ -49,7 +49,7 @@ class Camera:
         return Camera.from_Rt(right_rot, right_trans)
 
     def calculate_projection_matrix(self):
-        P = self.K @ self._M
+        P = Camera.K() @ self._M
         return P
 
     @classmethod
