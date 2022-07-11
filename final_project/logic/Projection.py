@@ -7,13 +7,13 @@ from final_project.models.Camera import Camera
 def project(cam: Camera, landmarks: np.ndarray) -> np.ndarray:
     """
     Projects an array of N 3D points onto the Camera's plane.
-    Returns an array of shape 2×N containing the projected pixels (X,Y coordinates) of each landmark
+    Returns an array of shape N×2 containing the projected pixels (X,Y coordinates) of each landmark
     """
     landmarks = __verify_array_shape(landmarks)
-    K, R, t = cam.K, cam.R, cam.t
+    K, R, t = cam.K(), cam.R, cam.t
     projections_3d = K @ (R @ landmarks + t)  # non normalized homogeneous coordinates of shape 3xN
     hom_coordinates = projections_3d / (projections_3d[2] + c.Epsilon)  # add epsilon to avoid 0 division
-    return hom_coordinates[:2]  # return only first 2 rows (x,y coordinates)
+    return (hom_coordinates[:2]).T  # return only first 2 rows (x,y coordinates)
 
 
 def __verify_array_shape(landmarks: np.ndarray) -> np.ndarray:
