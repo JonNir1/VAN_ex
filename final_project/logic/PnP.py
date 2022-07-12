@@ -7,7 +7,7 @@ from final_project.models.Camera import Camera
 _MinSamplesNumber = 4
 
 
-def pnp(points: np.ndarray, pixels: np.ndarray) -> Optional[Camera]:
+def pnp(points: np.ndarray, pixels: np.ndarray, verbose=False) -> Optional[Camera]:
     """
     Calculates a camera's [R|t] Extrinsic Matrix using cv2.solvePnP based on the 3D points and their corresponding
         2D projections onto the camera's plane
@@ -15,10 +15,15 @@ def pnp(points: np.ndarray, pixels: np.ndarray) -> Optional[Camera]:
     @raises AssertionError if input dimensions are not as required for PnP
     """
     points, pixels = __verify_input(points, pixels)
-    success, rotation, translation = cv2.solvePnP(objectPoints=points,         # N×3
-                                                  imagePoints=pixels,          # N×2
-                                                  cameraMatrix=Camera.K(),  # 3×3
-                                                  distCoeffs=None, flags=cv2.SOLVEPNP_EPNP)
+    K = __verify_array_shape(Camera.K(), 3, "Camera Matrix")
+    if verbose:
+        print(f"Points:\t{points.shape}")  # should be N×3
+        print(f"Pixels:\t{pixels.shape}")  # should be N×2
+        print(f"K:\t{K.shape}")            # should be 3×3
+    # Note: using np.ascontiguousarray because cv2.SolvePnP doesn't work well with "regular" np arrays (see docs)
+    success, rotation, translation = cv2.solvePnP(objectPoints=np.ascontiguousarray(points),
+                                                  imagePoints=np.ascontiguousarray(pixels),
+                                                  cameraMatrix=K, distCoeffs=None, flags=cv2.SOLVEPNP_EPNP)
     if not success:
         return None
     return Camera.from_Rt(cv2.Rodrigues(rotation)[0], translation)
