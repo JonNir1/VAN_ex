@@ -43,6 +43,12 @@ class RANSAC:
         return 1 - self._outlier_probability
 
     def run(self) -> Tuple[np.ndarray, Camera]:
+        """
+        Runs the RANSAC algorithm (two loops) to calculate the best front-left Camera and supporting landmarks.
+        :return:
+            - supporter_indices: np array of indices, representing the supporting landmarks for the best Camera
+            - fl_cam: Camera; the front-left Camera calculated using PnP on the set of supporters
+        """
         start = time.time()
         if self._verbose:
             print("\tRANSAC:\tinitial estimation loop")
@@ -62,7 +68,7 @@ class RANSAC:
     def _estimate_model(self) -> np.ndarray:
         """
         First loop of RANSAC algorithm:
-        1) Choose a subset of {4} indices from the whole list of available landmarks.
+        1) Choose a subset of {4} indices from the whole list of available 3D landmarks.
         2) Given these indices, extract the corresponding landmarks triangulated using the back-Camera, and
             corresponding projections of these landmarks onto the front-left Camera.
         3) Use the landmarks & pixels to calculate the front-left Camera using PnP, and then calculate the front-right
@@ -94,6 +100,21 @@ class RANSAC:
         return best_supporting_indices
 
     def _refine_model(self, best_supporting_indices: np.ndarray) -> Tuple[np.ndarray, Camera]:
+        """
+        Second loop of RANSAC algorithm:
+        1) Use the supporting indices found in the 1st loop, to calculate (PnP) the front-left Camera. Then calculate
+            the front-right Camera using the left-to-right transformation.
+        2) Project all 3D landmarks onto both Cameras' planes, and calculate the distance between projection and
+            actual keypoint. Landmarks with distance lower than {2} on both cameras are considered supporters
+            for these Cameras.
+        3) Use new set of supporters to re-calculate the front-left Camera, and rerun the iteration.
+            Stop iterating when there are no more new supporters.
+        :param best_supporting_indices: np array of indices, representing landmarks that were considered supporters in
+                the 1st loop of RANSAC.
+        :return:
+            - best_supporting_indices: np array of indices, representing the supporting landmarks for the best Camera
+            - fl_cam: Camera; the front-left Camera calculated using PnP on the set of supporters
+        """
         while True:
             self._performed_iterations += 1
             supporting_landmarks = self._landmarks[best_supporting_indices]
