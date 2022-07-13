@@ -15,7 +15,6 @@ class Camera:
         self.__verify_shape(extrinsic, 3, 4, "Extrinsic")
         self._M: np.ndarray = extrinsic
         Camera._is_init = self.__init_class_attributes()
-        self.__init_class_attributes()
 
     @staticmethod
     def from_Rt(R: np.ndarray, t: np.ndarray):
