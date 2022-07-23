@@ -1,17 +1,18 @@
 import time
-import numpy as np
 from itertools import count
-from typing import Tuple
 
 import final_project.config as c
 from final_project.models.Matcher import Matcher
 from final_project.models.Camera import Camera
 from final_project.models.Frame import Frame
+from final_project.models.DataBase import DataBase
 from final_project.logic.Triangulation import triangulate
 from final_project.logic.Ransac import RANSAC
 
 
 class IECalc:
+
+    MinTrackLength = 3
 
     def __init__(self, matcher: Matcher = c.DEFAULT_MATCHER):
         self._matcher = matcher
@@ -22,7 +23,10 @@ class IECalc:
     def num_tracks(self):
         return self._track_count
 
-    def process(self, num_frames: int = c.NUM_FRAMES, verbose=False):
+    def process(self,
+                num_frames: int = c.NUM_FRAMES,
+                min_track_length: int = MinTrackLength,
+                verbose=False, should_same=False) -> DataBase:
         start_time, minutes_counter = time.time(), 0
         if verbose:
             print(f"Calculating initial estimates for {num_frames} Frames...")
@@ -40,11 +44,15 @@ class IECalc:
                 minutes_counter = curr_minute
                 print(f"\tProcessed {i} tracking-pairs in {minutes_counter} minutes")
 
+        db = DataBase(processed_frames)
+        db.prune_short_tracks(min_track_length, inplace=True)
+        if should_same:
+            db.to_pickle()
         elapsed = time.time() - start_time
         if verbose:
             total_minutes = elapsed / 60
             print(f"Processed all {num_frames} Frames in {total_minutes:.2f} minutes")
-        return processed_frames
+        return db
 
     def _process_next_frame(self, bf: Frame) -> Frame:
         """

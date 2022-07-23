@@ -59,14 +59,26 @@ class Trajectory:
         coords = np.array(coords_list)
         return Trajectory(coords)
 
-    def calculate_distance(self, other, axis: Axis) -> np.ndarray:
+    @property
+    def X(self) -> np.ndarray:
+        return self._get_axis(Axis.X)
+
+    @property
+    def Y(self) -> np.ndarray:
+        return self._get_axis(Axis.Y)
+
+    @property
+    def Z(self) -> np.ndarray:
+        return self._get_axis(Axis.Z)
+
+    def calculate_distance(self, other, axis: Axis = Axis.All) -> np.ndarray:
         if not isinstance(other, Trajectory):
             raise TypeError("other must be of type Trajectory")
-        self_coords = self.get_axis(axis)
-        other_coords = other.get_axis(axis)
+        self_coords = self._get_axis(axis)
+        other_coords = other._get_axis(axis)
         return np.linalg.norm(self_coords - other_coords, ord=2, axis=0)
 
-    def get_axis(self, axis: Axis) -> np.ndarray:
+    def _get_axis(self, axis: Axis) -> np.ndarray:
         if axis == Axis.X:
             return self.coordinates[0]
         if axis == Axis.Y:

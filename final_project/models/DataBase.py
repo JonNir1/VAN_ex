@@ -16,6 +16,10 @@ class DataBase:
         self._tracks_db = self.__build_tracks_database(frames)
         self._cameras_db = self.__build_cameras_database(frames)
 
+    @property
+    def cameras(self) -> pd.Series:
+        return self._cameras_db.copy()
+
     def get_camera(self, frame_idx: int) -> Camera:
         return self._cameras_db[frame_idx]
 
