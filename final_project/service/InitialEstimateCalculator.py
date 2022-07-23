@@ -1,4 +1,5 @@
 import time
+from typing import List
 from itertools import count
 
 import final_project.config as c
@@ -26,7 +27,7 @@ class IECalc:
     def process(self,
                 num_frames: int = c.NUM_FRAMES,
                 min_track_length: int = MinTrackLength,
-                verbose=False, should_same=False) -> DataBase:
+                verbose=False, should_save=False) -> List[Frame]:
         start_time, minutes_counter = time.time(), 0
         if verbose:
             print(f"Calculating initial estimates for {num_frames} Frames...")
@@ -44,15 +45,15 @@ class IECalc:
                 minutes_counter = curr_minute
                 print(f"\tProcessed {i} tracking-pairs in {minutes_counter} minutes")
 
-        db = DataBase(processed_frames)
-        db.prune_short_tracks(min_track_length, inplace=True)
-        if should_same:
+        if should_save:
+            db = DataBase(processed_frames)
+            db.prune_short_tracks(min_track_length, inplace=True)
             db.to_pickle()
         elapsed = time.time() - start_time
         if verbose:
             total_minutes = elapsed / 60
             print(f"Processed all {num_frames} Frames in {total_minutes:.2f} minutes")
-        return db
+        return processed_frames
 
     def _process_next_frame(self, bf: Frame) -> Frame:
         """
