@@ -1,5 +1,4 @@
 import numpy as np
-import gtsam
 
 import final_project.config as c
 import final_project.utils as u
@@ -15,7 +14,7 @@ class Camera:
     def __init__(self, extrinsic: np.ndarray):
         self.__verify_shape(extrinsic, 3, 4, "Extrinsic")
         self._M: np.ndarray = extrinsic
-        Camera._is_init = self.__init_class_attributes()
+        Camera._is_init = Camera.init_class_attributes()
 
     @staticmethod
     def from_Rt(R: np.ndarray, t: np.ndarray):
@@ -29,6 +28,21 @@ class Camera:
         left_cam = Camera(M_left)
         right_cam = Camera(M_right)
         return left_cam, right_cam
+
+    @classmethod
+    def init_class_attributes(cls) -> bool:
+        if cls._is_init:
+            return True
+        try:
+            cls.__verify_shape(cls._K, 3, 3, "Intrinsic")
+            cls.__verify_shape(cls._RightRotation, 3, 3, "Right Rotation")
+            cls.__verify_shape(cls._RightTranslation, 3, 1, "Right Translation")
+        except AssertionError:
+            K, _, M_right = u.read_first_camera_matrices()
+            cls._K = K
+            cls._RightRotation = M_right[:, :-1]
+            cls._RightTranslation = M_right[:, -1].reshape((3, 1))
+        return True
 
     @classmethod
     def K(cls) -> np.ndarray:
@@ -51,21 +65,6 @@ class Camera:
         right_rot = Camera._RightRotation @ self.R
         right_trans = Camera._RightRotation @ self.t + Camera._RightTranslation
         return Camera.from_Rt(right_rot, right_trans)
-
-    @classmethod
-    def __init_class_attributes(cls) -> bool:
-        if Camera._is_init:
-            return True
-        try:
-            Camera.__verify_shape(Camera._K, 3, 3, "Intrinsic")
-            Camera.__verify_shape(Camera._RightRotation, 3, 3, "Right Rotation")
-            Camera.__verify_shape(Camera._RightTranslation, 3, 1, "Right Translation")
-        except AssertionError:
-            K, _, M_right = u.read_first_camera_matrices()
-            Camera._K = K
-            Camera._RightRotation = M_right[:, :-1]
-            Camera._RightTranslation = M_right[:, -1].reshape((3, 1))
-        return True
 
     @staticmethod
     def __verify_shape(mat: np.ndarray, nrows: int, ncols: int, name: str):
