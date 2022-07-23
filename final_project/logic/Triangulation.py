@@ -20,8 +20,8 @@ def triangulate(pixels1: np.ndarray, pixels2: np.ndarray,
     """
     pixels1, pixels2 = __verify_input(pixels1, pixels2)
     right_cam = right_cam if right_cam is not None else left_cam.get_right_camera()
-    left_proj_mat = left_cam.calculate_projection_matrix()
-    right_proj_mat = right_cam.calculate_projection_matrix()
+    left_proj_mat = left_cam.projection_matrix
+    right_proj_mat = right_cam.projection_matrix
     X_4d = cv2.triangulatePoints(left_proj_mat, right_proj_mat, pixels1, pixels2)
     X_4d /= (X_4d[3] + c.Epsilon)  # homogenize; add small epsilon to prevent division by 0
     return (X_4d[:-1]).T  # return only the 3D coordinates

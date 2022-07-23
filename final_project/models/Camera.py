@@ -1,4 +1,5 @@
 import numpy as np
+import gtsam
 
 import final_project.config as c
 import final_project.utils as u
@@ -42,14 +43,14 @@ class Camera:
         t = self._M[:, -1]
         return t.reshape((3, 1))
 
+    @property
+    def projection_matrix(self) -> np.ndarray:
+        return Camera.K() @ self._M
+
     def get_right_camera(self):
         right_rot = Camera._RightRotation @ self.R
         right_trans = Camera._RightRotation @ self.t + Camera._RightTranslation
         return Camera.from_Rt(right_rot, right_trans)
-
-    def calculate_projection_matrix(self):
-        P = Camera.K() @ self._M
-        return P
 
     @classmethod
     def __init_class_attributes(cls) -> bool:
@@ -65,7 +66,6 @@ class Camera:
             Camera._RightRotation = M_right[:, :-1]
             Camera._RightTranslation = M_right[:, -1].reshape((3, 1))
         return True
-
 
     @staticmethod
     def __verify_shape(mat: np.ndarray, nrows: int, ncols: int, name: str):
