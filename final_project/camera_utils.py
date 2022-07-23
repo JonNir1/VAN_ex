@@ -20,8 +20,20 @@ def convert_to_absolute_cameras(cams: Iterable[Camera]) -> List[Camera]:
 
 
 def convert_to_relative_cameras(cams: Iterable[Camera]) -> List[Camera]:
-    # TODO
-    return None
+    relative_cameras = []
+    for i, abs_cam in enumerate(cams):
+        if i == 0:
+            relative_cameras.append(abs_cam)
+            prev_cam = abs_cam
+        else:
+            prev_R, prev_t = prev_cam.R, prev_cam.t
+            curr_R, curr_t = abs_cam.R, abs_cam.t
+            R_rel = curr_R @ prev_R.T
+            t_rel = curr_t - R_rel @ prev_t
+            rel_cam = Camera.from_Rt(R_rel, t_rel)
+            relative_cameras.append(rel_cam)
+            prev_cam = abs_cam
+    return relative_cameras
 
 
 def calculate_gtsam_pose(cam: Camera) -> gtsam.Pose3:
@@ -40,4 +52,10 @@ def calculate_gtsam_stereo_params() -> gtsam.Cal3_S2Stereo:
     baseline = - Camera._RightTranslation[0][0]  # TODO: fixme
     gtsam_stereo_params = gtsam.Cal3_S2Stereo(fx, fy, skew, cx, cy, baseline)
     return gtsam_stereo_params
+
+
+def calculate_camera_from_gtsam_pose(pose: gtsam.Pose3) -> Camera:
+    R = pose.rotation().matrix().T
+    t = -R @ pose.translation().reshape((3, 1))
+    return Camera.from_Rt(R, t)
 

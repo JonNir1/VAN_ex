@@ -13,8 +13,10 @@ import final_project.config as c
 import final_project.camera_utils as cu
 from final_project.models.DataBase import DataBase
 from final_project.models.Camera import Camera
+from final_project.models.Trajectory import Trajectory
 from final_project.logic.Bundle import Bundle
 from final_project.service.InitialEstimateCalculator import IECalc
+from final_project.service.BundleAdjustment import BundleAdjustment
 
 # change matplotlib's backend
 matplotlib.use("webagg")
@@ -22,60 +24,50 @@ matplotlib.use("webagg")
 ###################################################
 
 
-def init(N: int = 100):
+def init(N: int = 3450):
     mtchr = c.DEFAULT_MATCHER
     iec = IECalc(matcher=mtchr)
     frames = iec.process(num_frames=N, verbose=True)
     database = DataBase(frames).prune_short_tracks(3)
-
-    cameras_df = database._cameras_db.to_frame()
-    cameras_df[c.Symbol] = database._cameras_db.index.map(lambda idx: gtsam.symbol('c', idx))
-    abs_cameras = cu.convert_to_absolute_cameras(database._cameras_db)
-    abs_poses = [cu.calculate_gtsam_pose(abs_cam) for abs_cam in abs_cameras]
-    cameras_df[c.AbsolutePose] = abs_poses
-
-    tracks_df = database._tracks_db
-    tracks_df[c.Symbol] = tracks_df.index.get_level_values(c.TrackIdx).map(lambda idx: gtsam.symbol('l', idx)).astype(int)
-    return tracks_df, cameras_df
+    database.to_pickle()
+    return database
 
 
-tracks_df, cameras_df = init()
+# db = init()
+db = DataBase.from_pickle("tracksdb_23072022_1751", "camerasdb_23072022_1751")
+ba = BundleAdjustment(db._tracks_db, db._cameras_db)
+ba.optimize(verbose=True)
+ba_cameras = ba.extract_cameras()
 
 ###############
 
-b0_frame_idxs = np.arange(10)
-b0_cams = cameras_df[cameras_df.index.get_level_values(level=c.FrameIdx).isin(b0_frame_idxs)]
-b0_tracks = tracks_df[tracks_df.index.get_level_values(level=c.FrameIdx).isin(b0_frame_idxs)]
-b0 = Bundle(b0_tracks, b0_cams)
-b0.adjust()
-print("0")
+pnp_traj = Trajectory.from_relative_cameras(db._cameras_db)
+ba_traj = Trajectory.from_relative_cameras(ba_cameras)
+gt_traj = Trajectory.read_ground_truth()
 
-b1_frame_idxs = np.arange(10)
-b1_cams = cameras_df[cameras_df.index.get_level_values(level=c.FrameIdx).isin(b1_frame_idxs)]
-b1_tracks = tracks_df[tracks_df.index.get_level_values(level=c.FrameIdx).isin(b1_frame_idxs)]
-b1 = Bundle(b1_tracks, b1_cams)
-b1.adjust()
-print("1")
+pnp_dist = pnp_traj.calculate_distance(gt_traj)
+ba_dist = ba_traj.calculate_distance(gt_traj)
 
-# est_traj = Trajectory.from_relative_cameras(database.cameras)
-# gt_traj = Trajectory.read_ground_truth(num_frames=N)
-# dist = est_traj.calculate_distance(gt_traj)
+fig, axes = plt.subplots(1, 2)
+fig.suptitle('KITTI Trajectories')
+axes[0].scatter(pnp_traj.X, pnp_traj.Z, marker="o", c='b', s=2, label="PnP")
+axes[0].scatter(ba_traj.X, ba_traj.Z, marker="^", c='g', s=2, label="BA")
+axes[0].scatter(gt_traj.X, gt_traj.Z, marker="x", c='k', s=2, label="GT")
+axes[0].set_title("Trajectories")
+axes[0].set_xlabel("$m$")
+axes[0].set_ylabel("$m$")
+axes[0].legend(loc='best')
 
-# fig, axes = plt.subplots(1, 2)
-# fig.suptitle('KITTI Trajectories')
-# axes[0].scatter(est_traj.X, est_traj.Z, marker="o", c='b', label="PnP")
-# axes[0].scatter(gt_traj.X, gt_traj.Z, marker="x", c='k', label="GT")
-# axes[0].set_title("Trajectories")
-# axes[0].set_xlabel("$m$")
-# axes[0].set_ylabel("$m$")
-# axes[0].legend(loc='best')
-#
-# axes[1].scatter([i for i in range(N)], dist, c='k', marker='*', s=1)
-# axes[1].set_title("Euclidean Distance")
-# axes[1].set_xlabel("Frame")
-# axes[1].set_ylabel("$m$")
-# fig.set_figwidth(10)
-# plt.show()
+axes[1].scatter([i for i in range(c.NUM_FRAMES)], pnp_dist, c='b', marker='o', s=1, label="PnP")
+axes[1].scatter([i for i in range(c.NUM_FRAMES)], ba_dist, c='g', marker='^', s=1, label="BA")
+axes[1].set_title("Euclidean Distance")
+axes[1].set_xlabel("Frame")
+axes[1].set_ylabel("$m$")
+axes[1].legend(loc='best')
+fig.set_figwidth(12)
+plt.show()
+
+
 
 
 
