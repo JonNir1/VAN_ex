@@ -31,18 +31,8 @@ class Camera:
 
     @classmethod
     def init_class_attributes(cls) -> bool:
-        if cls._is_init:
-            return True
-        try:
-            cls.__verify_shape(cls._K, 3, 3, "Intrinsic")
-            cls.__verify_shape(cls._RightRotation, 3, 3, "Right Rotation")
-            cls.__verify_shape(cls._RightTranslation, 3, 1, "Right Translation")
-        except AssertionError:
-            K, _, M_right = u.read_first_camera_matrices()
-            cls._K = K
-            cls._RightRotation = M_right[:, :-1]
-            cls._RightTranslation = M_right[:, -1].reshape((3, 1))
-        return True
+        # TODO: delete if this is not used
+        return cls.__init_class_attributes()
 
     @classmethod
     def K(cls) -> np.ndarray:
@@ -61,10 +51,29 @@ class Camera:
     def projection_matrix(self) -> np.ndarray:
         return Camera.K() @ self._M
 
+    def calculate_coordinates(self) -> np.ndarray:
+        R, t = self.R, self.t
+        return (-R.T @ t).reshape((3,))
+
     def get_right_camera(self):
         right_rot = Camera._RightRotation @ self.R
         right_trans = Camera._RightRotation @ self.t + Camera._RightTranslation
         return Camera.from_Rt(right_rot, right_trans)
+
+    @classmethod
+    def __init_class_attributes(cls) -> bool:
+        if cls._is_init:
+            return True
+        try:
+            cls.__verify_shape(cls._K, 3, 3, "Intrinsic")
+            cls.__verify_shape(cls._RightRotation, 3, 3, "Right Rotation")
+            cls.__verify_shape(cls._RightTranslation, 3, 1, "Right Translation")
+        except AssertionError:
+            K, _, M_right = u.read_first_camera_matrices()
+            cls._K = K
+            cls._RightRotation = M_right[:, :-1]
+            cls._RightTranslation = M_right[:, -1].reshape((3, 1))
+        return True
 
     @staticmethod
     def __verify_shape(mat: np.ndarray, nrows: int, ncols: int, name: str):

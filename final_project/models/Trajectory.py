@@ -4,6 +4,7 @@ from typing import Iterable
 import enum
 
 import final_project.config as c
+import final_project.camera_utils as cu
 from final_project.models.Camera import Camera
 
 
@@ -42,20 +43,8 @@ class Trajectory:
 
     @staticmethod
     def from_relative_cameras(cameras: Iterable[Camera]):
-        abs_Rs, abs_ts = [], []
-        coords_list = []
-        for i, cam in enumerate(cameras):
-            rel_R, rel_t = cam.R, cam.t
-            if i == 0:
-                curr_abs_R = rel_R
-                curr_abs_t = rel_t
-            else:
-                prev_abs_R, prev_abs_t = abs_Rs[-1], abs_ts[-1]
-                curr_abs_R = rel_R @ prev_abs_R
-                curr_abs_t = rel_t.reshape((3, 1)) + (rel_R @ prev_abs_t).reshape(3, 1)
-            abs_Rs.append(curr_abs_R)
-            abs_ts.append(curr_abs_t)
-            coords_list.append((- curr_abs_R.T @ curr_abs_t).reshape((3,)))
+        absolute_cameras = cu.convert_to_absolute_cameras(cameras)
+        coords_list = [cam.calculate_coordinates() for cam in absolute_cameras]
         coords = np.array(coords_list)
         return Trajectory(coords)
 
