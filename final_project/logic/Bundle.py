@@ -22,13 +22,10 @@ class Bundle:
         return self._factor_graph.is_optimized
 
     @property
-    def start_frame_index(self) -> int:
-        return self._tracks.index.get_level_values(c.FrameIdx).min()
-
-    @property
     def start_pose(self) -> gtsam.Pose3:
         col_name = c.OptPose if self.is_optimized else c.InitialPose
-        return self._cameras.loc[self.start_frame_index, col_name]
+        start_idx = self._tracks.index.get_level_values(c.FrameIdx).min()
+        return self._cameras.loc[start_idx, col_name]
 
     def get_poses(self):
         col_name = c.OptPose if self.is_optimized else c.InitialPose

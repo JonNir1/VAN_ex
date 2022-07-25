@@ -69,7 +69,8 @@ for i, b in enumerate(ba._bundles):
         break
     R0, t0 = opt_cams[-1].R, opt_cams[-1].t
     opt_cams = opt_cams[:-1]
-    start_pose = b._cameras.loc[b.start_frame_index, c.OptPose]
+    start_idx = b._tracks.index.get_level_values(c.FrameIdx).min()
+    start_pose = b._cameras.loc[start_idx, c.OptPose]
     for p in b._cameras[c.OptPose]:
         between_pose = start_pose.between(p)
         bundle_abs_cam = u.calculate_camera_from_gtsam_pose(between_pose)
