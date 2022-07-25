@@ -25,6 +25,15 @@ class Bundle:
     def start_frame_index(self) -> int:
         return self._tracks.index.get_level_values(c.FrameIdx).min()
 
+    @property
+    def start_pose(self) -> gtsam.Pose3:
+        col_name = c.OptPose if self.is_optimized else c.InitialPose
+        return self._cameras.loc[self.start_frame_index, col_name]
+
+    def get_poses(self):
+        col_name = c.OptPose if self.is_optimized else c.InitialPose
+        return self._cameras[col_name]
+
     def adjust(self) -> float:
         # Optimizes the Bundle & returns the error reduction
         self._factor_graph.optimize()

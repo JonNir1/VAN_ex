@@ -20,24 +20,17 @@ class BundleAdjustment:
         self._bundles: List[Bundle] = []
         self._reduced_error = 0.0
 
-    def optimize(self, verbose=False):
+    def optimize(self, verbose=False) -> List[Camera]:
         start_time, minutes_counter = time.time(), 0
         num_bundles = len(self._keyframe_indices) - 1
         if verbose:
             print(f"Starting trajectory optimization for {num_bundles} Bundles...\n")
 
         for i in range(num_bundles):
-            # extract data for this specific bundle:
-            start_idx, end_idx = self._keyframe_indices[i], self._keyframe_indices[i + 1]
-            frame_idxs = np.arange(start_idx, end_idx + 1)
-            cams = self._cameras[self._cameras.index.isin(frame_idxs)]
-            tracks = self._tracks[self._tracks.index.get_level_values(level=c.FrameIdx).isin(frame_idxs)]
-
-            # optimize current bundle:
-            bundle = Bundle(cameras=cams, tracks=tracks)
-            error_reduction = bundle.adjust()
+            b = self._build_bundle(bundle_id=i)
+            error_reduction = b.adjust()
             self._reduced_error += error_reduction
-            self._bundles.append(bundle)
+            self._bundles.append(b)
 
             # print every minute if verbose:
             curr_minute = int((time.time() - start_time) / 60)
@@ -45,13 +38,24 @@ class BundleAdjustment:
                 minutes_counter = curr_minute
                 print(f"\tElapsed Minutes:\t{minutes_counter}\n\tIteration Number:\t{i}\n")
 
+        relative_cameras = self._extract_cameras()
         elapsed = time.time() - start_time
         if verbose:
             total_minutes = elapsed / 60
             print(f"Finished Bundle adjustment within {total_minutes:.2f} minutes")
             print(f"Mean error reduction per Bundle:\t{(self._reduced_error / num_bundles):.3f}")
+        return relative_cameras
 
-    def extract_cameras(self) -> List[Camera]:
+    def _build_bundle(self, bundle_id: int) -> Bundle:
+        # Extract data for the i-th Bundle and create the Bundle object
+        start_idx, end_idx = self._keyframe_indices[bundle_id], self._keyframe_indices[bundle_id + 1]
+        frame_idxs = np.arange(start_idx, end_idx + 1)
+        cams = self._cameras[self._cameras.index.isin(frame_idxs)]
+        tracks = self._tracks[self._tracks.index.get_level_values(level=c.FrameIdx).isin(frame_idxs)]
+        bundle = Bundle(cameras=cams, tracks=tracks)
+        return bundle
+
+    def _extract_cameras(self) -> List[Camera]:
         """
         Returns a list of Camera objects, after optimization of all Bundles.
         Note each Camera is aligned based on the previous one, and NOT based on the global coordinates
@@ -65,6 +69,26 @@ class BundleAdjustment:
             for cam in rel_cams:
                 cameras.append(cam)
         return cameras
+
+    # def _extract_cameras(self) -> List[Camera]:
+    #     """
+    #     Returns a list of Camera objects, after optimization of all Bundles.
+    #     Note each Camera is aligned based on the previous one, and NOT based on the global coordinates
+    #     """
+    #     first_pose = self._bundles[0].start_pose
+    #     first_camera = cu.calculate_camera_from_gtsam_pose(first_pose)
+    #     absolute_cameras = [first_camera]
+    #     for i, b in enumerate(self._bundles):
+    #         kf_abs_cam = absolute_cameras.pop()  # keyframe's camera from previous Bundle
+    #         kf_R, kf_t = kf_abs_cam.R, kf_abs_cam.t
+    #         start_pose = b.start_pose
+    #         for p in b.get_poses():
+    #             between_pose = start_pose.between(p)
+    #             bundle_cam = cu.calculate_camera_from_gtsam_pose(between_pose)
+    #             new_R = bundle_cam.R @ kf_R
+    #             new_t = bundle_cam.R @ kf_t + bundle_cam.t
+    #             absolute_cameras.append(Camera.from_Rt(new_R, new_t))
+    #     return cu.convert_to_relative_cameras(absolute_cameras)
 
     @staticmethod
     def __preprocess_tracks(tracks: pd.DataFrame) -> pd.DataFrame:
