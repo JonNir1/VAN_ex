@@ -1,7 +1,27 @@
 import numpy as np
 
 import final_project.config as c
-import final_project.utils as u
+
+def read_first_camera_matrices(path: str = ""):
+    """
+    Load camera matrices from the KITTY dataset
+    Returns the following matrices (ndarrays):
+        K - Intrinsic camera matrix
+        M_left, M_right - Extrinsic camera matrix (left, right)
+    """
+    if path is None or path == "":
+        path = os.path.join(c.DATA_READ_PATH, "sequences", "00", "calib.txt")
+    with open(path, "r") as f:
+        l1 = f.readline().split()[1:]  # skip first token
+        l2 = f.readline().split()[1:]  # skip first token
+    l1 = [float(i) for i in l1]
+    m1 = np.array(l1).reshape(3, 4)
+    l2 = [float(i) for i in l2]
+    m2 = np.array(l2).reshape(3, 4)
+    K = m1[:, :3]
+    M_left = np.linalg.inv(K) @ m1
+    M_right = np.linalg.inv(K) @ m2
+    return K, M_left, M_right
 
 
 class Camera:
@@ -24,7 +44,7 @@ class Camera:
 
     @staticmethod
     def read_initial_cameras():
-        _, M_left, M_right = u.read_first_camera_matrices()
+        _, M_left, M_right = read_first_camera_matrices()
         left_cam = Camera(M_left)
         right_cam = Camera(M_right)
         return left_cam, right_cam
@@ -69,7 +89,7 @@ class Camera:
             cls.__verify_shape(cls._RightRotation, 3, 3, "Right Rotation")
             cls.__verify_shape(cls._RightTranslation, 3, 1, "Right Translation")
         except AssertionError:
-            K, _, M_right = u.read_first_camera_matrices()
+            K, _, M_right = read_first_camera_matrices()
             cls._K = K
             cls._RightRotation = M_right[:, :-1]
             cls._RightTranslation = M_right[:, -1].reshape((3, 1))
