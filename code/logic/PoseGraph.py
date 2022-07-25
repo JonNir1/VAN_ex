@@ -70,6 +70,10 @@ class PoseGraph:
                 factor = gtsam.BetweenFactorPose3(back_symbol, front_symbol, relative_pose, noise_model)
                 self._factor_graph.add(factor)
 
+                back_vertex_id = self._locations_graph.get_vertex_id(frame_idx=back_idx, symbol=back_symbol)
+                front_vertex_id = self._locations_graph.get_vertex_id(frame_idx=front_idx, symbol=front_symbol)
+                self._locations_graph.create_or_update_edge(v1_id=back_vertex_id, v2_id=front_vertex_id, cov=relative_cov)
+
                 # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
                 prev_err = self._factor_graph.error(intermediate_results)
                 optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
