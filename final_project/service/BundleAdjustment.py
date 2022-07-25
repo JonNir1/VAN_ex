@@ -16,7 +16,7 @@ class BundleAdjustment:
     def __init__(self, tracks: pd.DataFrame, cameras: pd.Series):
         self._tracks = self.__preprocess_tracks(tracks)
         self._cameras = self.__preprocess_cameras(cameras)
-        self._keyframe_indices = self.__choose_keyframe_indices(tracks.index.unique(level=c.FrameIdx).max())
+        self._keyframe_indices = u.choose_keyframe_indices(max_frame_idx=tracks.index.unique(level=c.FrameIdx).max(), bundle_size=c.BUNDLE_SIZE)
         self._bundles: List[Bundle] = []
         self._reduced_error = 0.0
 
@@ -103,24 +103,6 @@ class BundleAdjustment:
         abs_poses = pd.Series([u.calculate_gtsam_pose(abs_cam) for abs_cam in abs_cameras], name=c.AbsolutePose)
         cameras_df = pd.concat([cameras, camera_symbols, abs_poses], axis=1)
         return cameras_df
-
-    @staticmethod
-    def __choose_keyframe_indices(max_frame_idx: int, bundle_size: int = c.BUNDLE_SIZE):
-        """
-        Returns a list of integers representing the keypoint indices, where each Bundle is of size $bundle_size
-        see: https://stackoverflow.com/questions/72292581/split-list-into-chunks-with-repeats-between-chunks
-        """
-        # TODO: enable other methods to choose keyframes (e.g. #Tracks, distance travelled, etc.)
-        interval = bundle_size - 1
-        all_idxs = list(range(max_frame_idx + 1))
-        bundled_idxs = [all_idxs[i * interval: i * interval + bundle_size] for i in
-                        range(math.ceil((len(all_idxs) - 1) / interval))]
-        # return bundled_idxs  # if we want to return a list-of-list containing all indices in each bundle
-        keypoint_idxs = [bundle[0] for bundle in bundled_idxs]
-        if keypoint_idxs[-1] == all_idxs[-1]:
-            return keypoint_idxs
-        keypoint_idxs.append(all_idxs[-1])
-        return keypoint_idxs
 
 
 

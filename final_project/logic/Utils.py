@@ -1,3 +1,4 @@
+import math
 import gtsam
 from typing import Iterable, List
 
@@ -59,3 +60,20 @@ def calculate_camera_from_gtsam_pose(pose: gtsam.Pose3) -> Camera:
     t = -R @ pose.translation().reshape((3, 1))
     return Camera.from_Rt(R, t)
 
+
+def choose_keyframe_indices(max_frame_idx: int, bundle_size: int = c.BUNDLE_SIZE):
+    """
+    Returns a list of integers representing the keypoint indices, where each Bundle is of size $bundle_size
+    see: https://stackoverflow.com/questions/72292581/split-list-into-chunks-with-repeats-between-chunks
+    """
+    # TODO: enable other methods to choose keyframes (e.g. #Tracks, distance travelled, etc.)
+    interval = bundle_size - 1
+    all_idxs = list(range(max_frame_idx + 1))
+    bundled_idxs = [all_idxs[i * interval: i * interval + bundle_size] for i in
+                    range(math.ceil((len(all_idxs) - 1) / interval))]
+    # return bundled_idxs  # if we want to return a list-of-list containing all indices in each bundle
+    keypoint_idxs = [bundle[0] for bundle in bundled_idxs]
+    if keypoint_idxs[-1] == all_idxs[-1]:
+        return keypoint_idxs
+    keypoint_idxs.append(all_idxs[-1])
+    return keypoint_idxs
