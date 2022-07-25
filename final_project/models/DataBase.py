@@ -84,7 +84,7 @@ class DataBase:
     @staticmethod
     def __build_tracks_database(frames: List[Frame]):
         if len(frames) == 0:
-            tracks_db = pd.DataFrame(columns=[c.XL, c.XR, c.Y, c.FrameIdx, c.TrackIdx])
+            tracks_db = pd.DataFrame(columns=[c.XL, c.XR, c.Y, c.FrameIdx, c.TrackIdx], dtype='float64')
             tracks_db.set_index([c.FrameIdx, c.TrackIdx], inplace=True)
             return tracks_db
 
@@ -97,7 +97,10 @@ class DataBase:
 
     @staticmethod
     def __build_cameras_database(frames: List[Frame]):
-        cams = pd.Series([fr.left_cam for fr in frames], name=c.CamL)
+        if len(frames) == 0:
+            cams = pd.Series([fr.left_cam for fr in frames], name=c.CamL, dtype = 'float64')
+        else:
+            cams = pd.Series([fr.left_cam for fr in frames], name=c.CamL)
         cams.index.name = c.FrameIdx
         return cams
 
