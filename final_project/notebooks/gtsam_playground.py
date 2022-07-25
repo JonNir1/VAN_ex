@@ -2,7 +2,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 
 import final_project.config as c
-import final_project.logic.CameraUtils as cu
+import final_project.logic.Utils as u
 from final_project.models.Camera import Camera
 from final_project.models.DataBase import DataBase
 from final_project.models.Trajectory import Trajectory
@@ -61,7 +61,7 @@ plt.show()
 
 # Compare BundleAdjustment._extract_cameras1 with BundleAdjustment._extract_cameras2
 
-opt_cams = [cu.calculate_camera_from_gtsam_pose(ba._bundles[0]._cameras.loc[0, c.OptPose])]
+opt_cams = [calculate_camera_from_gtsam_pose(ba._bundles[0]._cameras.loc[0, c.OptPose])]
 for i, b in enumerate(ba._bundles):
     # if i == 0:
     #     continue
@@ -72,13 +72,13 @@ for i, b in enumerate(ba._bundles):
     start_pose = b._cameras.loc[b.start_frame_index, c.OptPose]
     for p in b._cameras[c.OptPose]:
         between_pose = start_pose.between(p)
-        bundle_abs_cam = cu.calculate_camera_from_gtsam_pose(between_pose)
+        bundle_abs_cam = u.calculate_camera_from_gtsam_pose(between_pose)
         new_R = bundle_abs_cam.R @ R0
         new_t = bundle_abs_cam.R @ t0 + bundle_abs_cam.t
         opt_cams.append(Camera.from_Rt(new_R, new_t))
 
 
-rel_cams = cu.convert_to_relative_cameras(opt_cams)
+rel_cams = u.convert_to_relative_cameras(opt_cams)
 traj = Trajectory.from_relative_cameras(rel_cams)
 
 ba2_dist_ba1 = traj.calculate_distance(ba_traj)

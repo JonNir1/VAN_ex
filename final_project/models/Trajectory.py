@@ -4,7 +4,7 @@ from typing import Iterable
 import enum
 
 import final_project.config as c
-import final_project.logic.CameraUtils as cu
+import final_project.logic.Utils as u
 from final_project.models.Camera import Camera
 
 
@@ -43,7 +43,7 @@ class Trajectory:
 
     @staticmethod
     def from_relative_cameras(cameras: Iterable[Camera]):
-        absolute_cameras = cu.convert_to_absolute_cameras(cameras)
+        absolute_cameras = u.convert_to_absolute_cameras(cameras)
         coords_list = [cam.calculate_coordinates() for cam in absolute_cameras]
         coords = np.array(coords_list)
         return Trajectory(coords)

@@ -6,7 +6,7 @@ import numpy as np
 from typing import List
 
 import final_project.config as c
-import final_project.logic.CameraUtils as cu
+import final_project.logic.Utils as u
 from final_project.logic.Bundle import Bundle
 from final_project.models.Camera import Camera
 
@@ -76,7 +76,7 @@ class BundleAdjustment:
     #     Note each Camera is aligned based on the previous one, and NOT based on the global coordinates
     #     """
     #     first_pose = self._bundles[0].start_pose
-    #     first_camera = cu.calculate_camera_from_gtsam_pose(first_pose)
+    #     first_camera = u.calculate_camera_from_gtsam_pose(first_pose)
     #     absolute_cameras = [first_camera]
     #     for i, b in enumerate(self._bundles):
     #         kf_abs_cam = absolute_cameras.pop()  # keyframe's camera from previous Bundle
@@ -84,11 +84,11 @@ class BundleAdjustment:
     #         start_pose = b.start_pose
     #         for p in b.get_poses():
     #             between_pose = start_pose.between(p)
-    #             bundle_cam = cu.calculate_camera_from_gtsam_pose(between_pose)
+    #             bundle_cam = u.calculate_camera_from_gtsam_pose(between_pose)
     #             new_R = bundle_cam.R @ kf_R
     #             new_t = bundle_cam.R @ kf_t + bundle_cam.t
     #             absolute_cameras.append(Camera.from_Rt(new_R, new_t))
-    #     return cu.convert_to_relative_cameras(absolute_cameras)
+    #     return u.convert_to_relative_cameras(absolute_cameras)
 
     @staticmethod
     def __preprocess_tracks(tracks: pd.DataFrame) -> pd.DataFrame:
@@ -99,8 +99,8 @@ class BundleAdjustment:
     def __preprocess_cameras(cameras: pd.Series) -> pd.DataFrame:
         camera_symbols = cameras.index.map(lambda idx: gtsam.symbol('c', idx))
         camera_symbols = camera_symbols.to_series(index=cameras.index, name=c.Symbol)
-        abs_cameras = cu.convert_to_absolute_cameras(cameras)
-        abs_poses = pd.Series([cu.calculate_gtsam_pose(abs_cam) for abs_cam in abs_cameras], name=c.AbsolutePose)
+        abs_cameras = u.convert_to_absolute_cameras(cameras)
+        abs_poses = pd.Series([u.calculate_gtsam_pose(abs_cam) for abs_cam in abs_cameras], name=c.AbsolutePose)
         cameras_df = pd.concat([cameras, camera_symbols, abs_poses], axis=1)
         return cameras_df
 

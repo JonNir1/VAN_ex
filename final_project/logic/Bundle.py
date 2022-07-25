@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List
 
 import final_project.config as c
-import final_project.logic.CameraUtils as cu
+import final_project.logic.Utils as u
 from final_project.models.Camera import Camera
 from final_project.models.FactorGraph import FactorGraph
 
@@ -58,8 +58,8 @@ class Bundle:
         if not self.is_optimized:
             raise RuntimeError("Cannot extract optimized Cameras from a non-optimized Bundle")
         opt_poses = self._cameras[c.OptPose]
-        opt_cameras = opt_poses.apply(lambda p: cu.calculate_camera_from_gtsam_pose(p))
-        rel_cameras = cu.convert_to_relative_cameras(opt_cameras)
+        opt_cameras = opt_poses.apply(lambda p: u.calculate_camera_from_gtsam_pose(p))
+        rel_cameras = u.convert_to_relative_cameras(opt_cameras)
         return rel_cameras
 
     def __process_cameras(self, cameras: pd. DataFrame, verbose):
@@ -88,7 +88,7 @@ class Bundle:
 
     def __process_tracks(self, tracks: pd.DataFrame, verbose):
         start, min_count = time.time(), 0
-        stereo_params = cu.calculate_gtsam_stereo_params()
+        stereo_params = u.calculate_gtsam_stereo_params()
         counter = 0
         for track_idx in tracks.index.unique(level=c.TrackIdx):
             single_track_data = tracks.xs(track_idx, level=c.TrackIdx)
