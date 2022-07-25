@@ -9,7 +9,7 @@ DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "final_project", "outputs")
 
 Epsilon = 1e-8
 NUM_FRAMES = 3450
-BUNDLE_SIZE = 10
+BUNDLE_SIZE = 15
 
 
 _DEFAULT_DETECTOR_NAME = "sift"
