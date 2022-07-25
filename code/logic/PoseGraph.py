@@ -61,7 +61,8 @@ class PoseGraph:
 
                 # need to add this as constraint to Factor Graph & as edge Locations Graph
                 if verbose:
-                    print(f"Adding edge #{closed_loops_count + 1} between Frame{front_idx} and Frame{back_idx}:")
+                    print(f"Loop #{closed_loops_count + 1}")
+                    print(f"\tFrame{front_idx}\t<-->\tFrame{back_idx}")
                 relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame,
                                                                                  supporters)
                 noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
