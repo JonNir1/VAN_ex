@@ -1,15 +1,10 @@
 import os
 from final_project.models.Matcher import Matcher
 
-# Windows paths:
-# MAIN_DIRECTORY = "C:\\Users\\nirjo\\Documents\\University\\Masters\\Computer Vision Aided Navigation\\VAN_ex"
-# DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')
-# DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "final_project\\outputs")
-
-# WSL paths:
-MAIN_DIRECTORY = "/mnt/c/Users/nirjo/Documents/University/Masters/Computer Vision Aided Navigation/VAN_ex"
+# MAIN_DIRECTORY = "C:\\Users\\nirjo\\Documents\\University\\Masters\\Computer Vision Aided Navigation\\VAN_ex"  # Windows path
+MAIN_DIRECTORY = "/mnt/c/Users/nirjo/Documents/University/Masters/Computer Vision Aided Navigation/VAN_ex"  # WSL path
 DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')
-DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "final_project/outputs")
+DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "final_project", "outputs")
 
 
 Epsilon = 1e-8
