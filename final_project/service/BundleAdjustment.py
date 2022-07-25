@@ -20,6 +20,9 @@ class BundleAdjustment:
         self._bundles: List[Bundle] = []
         self._reduced_error = 0.0
 
+    def get_keyframe_indices(self) -> List[int]:
+        return self._keyframe_indices
+
     def optimize(self, verbose=False) -> List[Camera]:
         start_time, minutes_counter = time.time(), 0
         num_bundles = len(self._keyframe_indices) - 1
@@ -45,6 +48,9 @@ class BundleAdjustment:
             print(f"Finished Bundle adjustment within {total_minutes:.2f} minutes")
             print(f"Mean error reduction per Bundle:\t{(self._reduced_error / num_bundles):.3f}")
         return relative_cameras
+
+    def extract_relative_covariances(self) -> List[np.ndarray]:
+        return [b.extract_keyframes_relative_covariance() for b in self._bundles]
 
     def _build_bundle(self, bundle_id: int) -> Bundle:
         # Extract data for the i-th Bundle and create the Bundle object

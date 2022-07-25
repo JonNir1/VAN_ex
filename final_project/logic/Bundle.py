@@ -1,5 +1,6 @@
 import time
 import gtsam
+import numpy as np
 import pandas as pd
 from typing import List
 
@@ -10,7 +11,7 @@ from final_project.models.FactorGraph import FactorGraph
 
 
 class Bundle:
-    _Max_Landmark_Distance = 400
+    _Max_Landmark_Distance = 300
 
     def __init__(self, tracks: pd.DataFrame, cameras: pd.DataFrame, verbose=False):
         self._factor_graph = FactorGraph()
@@ -58,6 +59,24 @@ class Bundle:
         opt_cameras = opt_poses.apply(lambda p: u.calculate_camera_from_gtsam_pose(p))
         rel_cameras = u.convert_to_relative_cameras(opt_cameras)
         return rel_cameras
+
+    def extract_keyframes_relative_pose(self) -> gtsam.Pose3:
+        start_idx = self._tracks.index.get_level_values(c.FrameIdx).min()
+        start_symbol = self._cameras.loc[start_idx, c.Symbol]
+        start_pose = self._factor_graph.get_optimized_pose(start_symbol)
+        end_idx = self._tracks.index.get_level_values(c.FrameIdx).max()
+        end_symbol = self._cameras.loc[end_idx, c.Symbol]
+        end_pose = self._factor_graph.get_optimized_pose(end_symbol)
+        return start_pose.between(end_pose)
+
+    def extract_keyframes_relative_covariance(self) -> np.ndarray:
+        # Returns the relative covariance between the start- and end-keyframes of the Bundle, as calculated by the FactorGraph
+        start_idx = self._tracks.index.get_level_values(c.FrameIdx).min()
+        start_symbol = self._cameras.loc[start_idx, c.Symbol]
+        end_idx = self._tracks.index.get_level_values(c.FrameIdx).max()
+        end_symbol = self._cameras.loc[end_idx, c.Symbol]
+        cov = self._factor_graph.calculate_relative_covariance(start_symbol, end_symbol)
+        return cov
 
     def __process_cameras(self, cameras: pd. DataFrame, verbose):
         start, min_count = time.time(), 0

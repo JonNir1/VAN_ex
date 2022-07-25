@@ -50,6 +50,8 @@ class FactorGraph:
         return self._optimized_results.atPose3(symbol)
 
     def calculate_relative_covariance(self, symbol1: gtsam.Symbol, symbol2: gtsam.Symbol) -> np.ndarray:
+        if not self.is_optimized:
+            raise RuntimeError("Cannot calculate covariance from a non-optimized FactorGraph")
         keys = gtsam.KeyVector()
         keys.append(symbol1)
         keys.append(symbol2)
@@ -58,6 +60,15 @@ class FactorGraph:
         information = np.linalg.inv(marginal_cov)
         relative_cov = np.linalg.inv(information[-6:, -6:])
         return relative_cov
+
+    def extract_relative_camera_matrix(self, front_symbol: gtsam.Symbol, back_symbol: gtsam.Symbol) -> np.ndarray:
+        if not self.is_optimized:
+            raise RuntimeError("Cannot extract relative 6D camera matrix from a non-optimized FactorGraph")
+        front_pose = self.get_optimized_pose(front_symbol)
+        back_pose = self.get_optimized_pose(back_symbol)
+        relative_pose = back_pose.between(front_pose)
+        delta_cam = np.hstack([relative_pose.rotation().xyz(), relative_pose.translation()])
+        return delta_cam
 
     def get_pre_optimization_error(self) -> float:
         return self._factor_graph.error(self._initial_estimates)
