@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 import final_project.config as c
