@@ -4,7 +4,7 @@ from typing import Iterable
 import enum
 
 import final_project.config as c
-import final_project.camera_utils as cu
+import final_project.logic.CameraUtils as cu
 from final_project.models.Camera import Camera
 
 

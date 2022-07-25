@@ -1,11 +1,10 @@
 import time
 import gtsam
-import numpy as np
 import pandas as pd
 from typing import List
 
 import final_project.config as c
-import final_project.camera_utils as cu
+import final_project.logic.CameraUtils as cu
 from final_project.models.Camera import Camera
 from final_project.models.FactorGraph import FactorGraph
 
