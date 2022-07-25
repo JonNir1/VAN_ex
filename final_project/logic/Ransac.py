@@ -1,10 +1,12 @@
 import time
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 from final_project.models.Camera import Camera
+from final_project.models.Frame import Frame
 from final_project.logic.PnP import pnp
 from final_project.logic.Projection import project
+from final_project.logic.Triangulation import triangulate
 
 
 class RANSAC:
@@ -13,6 +15,7 @@ class RANSAC:
     _DefaultSuccessProbability = 0.9999
     _SupporterThreshold = 2
     _MaxIterationCount = int(1e6)
+    __LeftCam0, __RightCam0 = Camera.read_initial_cameras()
 
     def __init__(self, back_landmarks: np.ndarray, front_features: np.ndarray,
                  success_prob: float = _DefaultSuccessProbability, verbose=False):
@@ -29,6 +32,21 @@ class RANSAC:
         self._remaining_iterations = self.__calculate_remaining_iterations()
         self._performed_iterations = 0
         self._verbose = verbose
+
+    @staticmethod
+    def from_frames(bf: Frame, ff: Frame, matched_indices: List[Tuple[int, int]]):
+        # Creates a RANSAC object with default values, based on matches between the two provided Frames
+        back_features = bf.features[[idxs[0] for idxs in matched_indices]]
+        back_landmarks = triangulate(pixels1=back_features[:, :2], pixels2=back_features[:, 2:],
+                                     left_cam=RANSAC.__LeftCam0, right_cam=RANSAC.__RightCam0)
+        landmarks_num, landmarks_dims = back_landmarks.shape
+        assert landmarks_dims == 3, "landmarks should have 3 columns"
+
+        front_features = ff.features[[idxs[1] for idxs in matched_indices]]
+        feat_num, feat_dims = front_features.shape
+        assert feat_dims == 4, "pixels should have 4 columns"
+        assert landmarks_num == feat_num, f"number of landmarks ({landmarks_num}) doesn't equal number of pixels ({feat_num})"
+        return RANSAC(back_landmarks, front_features)
 
     @property
     def max_num_supporters(self) -> int:

@@ -7,7 +7,6 @@ from final_project.models.Matcher import Matcher
 from final_project.models.Camera import Camera
 from final_project.models.Frame import Frame
 from final_project.models.DataBase import DataBase
-from final_project.logic.Triangulation import triangulate
 from final_project.logic.Ransac import RANSAC
 
 
@@ -70,22 +69,10 @@ class IECalc:
         :returns ff: front frame - the newly created Frame with updated tracks linking to $bf
         """
 
-        # find matches between frames & triangulate to get 3D landmarks
+        # use RANSAC to calculate front-left Camera & supporting landmark indices
         ff = Frame(bf.idx + 1, matcher=self._matcher)
         matched_indices = self._matcher.match_descriptors(bf.descriptors, ff.descriptors)
-        back_features = bf.features[[idxs[0] for idxs in matched_indices]]
-        back_landmarks = triangulate(pixels1=back_features[:, :2], pixels2=back_features[:, 2:],
-                                     left_cam=self._cam0_l, right_cam=self._cam0_r)
-        landmarks_num, landmarks_dims = back_landmarks.shape
-        assert landmarks_dims == 3, "landmarks should have 3 columns"
-
-        front_features = ff.features[[idxs[1] for idxs in matched_indices]]
-        feat_num, feat_dims = front_features.shape
-        assert feat_dims == 4, "pixels should have 4 columns"
-        assert landmarks_num == feat_num, f"number of landmarks ({landmarks_num}) doesn't equal number of pixels ({feat_num})"
-
-        # use RANSAC to calculate front-left Camera & supporting landmark indices
-        r = RANSAC(back_landmarks, front_features)
+        r = RANSAC.from_frames(bf, ff, matched_indices)
         supporting_idxs, fl_cam = r.run()
 
         # update Frames:
