@@ -2,6 +2,7 @@ import math
 import gtsam
 from typing import Iterable, List
 
+import final_project.config as c
 from final_project.models.Camera import Camera
 
 
