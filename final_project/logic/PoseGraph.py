@@ -2,24 +2,16 @@ import gtsam
 import numpy as np
 from typing import List, Tuple
 
-import final_project.config as c
 import final_project.logic.Utils as u
 from final_project.models.Camera import Camera
 from final_project.models.FactorGraph import FactorGraph
 from final_project.models.AdjacencyGraph import AdjacencyGraph
 from final_project.models.Frame import Frame
 from final_project.models.DataBase import DataBase
-from final_project.logic.Ransac import RANSAC
 from final_project.logic.Bundle import Bundle
 
 
 class PoseGraph:
-    __MaxLoopsCount = 1e6
-    _LeftCam0, _RightCam0 = Camera.read_initial_cameras()
-    KeyframeDistanceThreshold = 10
-    MahalanobisThreshold = 2.0
-    MatchCountThreshold = 100
-    OutlierPercentThreshold = 20.0
 
     def __init__(self, keyframes: List[int], relative_cameras: List[Camera], relative_covariances: List[np.ndarray]):
         assert len(keyframes) == len(relative_covariances) + 1, f"Keyframe count ({len(keyframes)}) should be 1 + Covariance count ({len(relative_covariances)})"
@@ -32,56 +24,14 @@ class PoseGraph:
     def is_optimized(self) -> bool:
         return self._factor_graph.is_optimized
 
-    def optimize(self, max_loops: int = __MaxLoopsCount, verbose=False) -> List[Camera]:
-        # TODO: move this to a separate service file
+    @property
+    def keyframe_indices(self) -> List[int]:
+        return sorted(self._keyframe_symbols.keys())
+
+    def optimize(self):
         self._factor_graph.optimize()
-        closed_loop_count = 0
-        kf_idxs = sorted(self._keyframe_symbols.keys())
-        for i, front_idx in enumerate(kf_idxs):
-            if closed_loop_count >= max_loops:
-                break
-            for j in range(i - PoseGraph.KeyframeDistanceThreshold):
-                if closed_loop_count >= max_loops:
-                    break
-                back_idx = kf_idxs[j]
-                mahal_dist = self._calculate_mahalanobis_distance(back_idx, front_idx)
-                if mahal_dist < 0 or mahal_dist > PoseGraph.MahalanobisThreshold:
-                    # these KeyFrames are not possible loops
-                    continue
-                back_frame, front_frame, matched_indices, supporter_indices = self._match_possible_loop(front_idx, back_idx)
-                outlier_percent = 100 * (len(matched_indices) - len(supporter_indices)) / len(matched_indices)
-                if outlier_percent > PoseGraph.OutlierPercentThreshold:
-                    # there are not enough supporters to justify loop on this pair
-                    continue
 
-                # reached here if this is a valid loop
-                # Add constraint to FactorGraph and optimize
-                if verbose:
-                    print(f"Loop #{closed_loop_count + 1}")
-                    print(f"\tFrame{front_idx}\t<-->\tFrame{back_idx}")
-                back_symbol, front_symbol = self._keyframe_symbols[back_idx], self._keyframe_symbols[front_idx]
-                pose, cov = self._calculate_relative_pose_and_cov(back_frame, front_frame, matched_indices, supporter_indices)
-                self._factor_graph.add_between_pose_factor(back_symbol, front_symbol, pose, cov)
-                self._factor_graph.optimize()  # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
-                closed_loop_count += 1
-
-                # Add edge to AdjacencyGraph
-                back_vertex_id = self._adjacency_graph.get_vertex_id(frame_idx=back_idx, symbol=back_symbol)
-                front_vertex_id = self._adjacency_graph.get_vertex_id(frame_idx=front_idx, symbol=front_symbol)
-                self._adjacency_graph.create_or_update_edge(v1_id=back_vertex_id, v2_id=front_vertex_id, cov=cov)
-
-                if verbose:
-                    prev_err = self._factor_graph.get_pre_optimization_error()
-                    post_err = self._factor_graph.get_post_optimization_error()
-                    print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
-                    print(f"\tError Before:\t{prev_err:.4f}\n")
-                    print(f"\tError After:\t{post_err:.4f}\n")
-
-        # one last optimization just to be sure
-        self._factor_graph.optimize()
-        return self._extract_cameras()
-
-    def _calculate_mahalanobis_distance(self, back_idx, front_idx) -> float:
+    def calculate_mahalanobis_distance(self, back_idx, front_idx) -> float:
         back_symbol = self._keyframe_symbols[back_idx]
         back_vertex_id = self._adjacency_graph.get_vertex_id(frame_idx=back_idx, symbol=back_symbol)
         front_symbol = self._keyframe_symbols[front_idx]
@@ -90,19 +40,35 @@ class PoseGraph:
         delta_cam = self._factor_graph.extract_relative_camera_matrix(front_symbol, back_symbol)
         return delta_cam @ cov @ delta_cam
 
-    @staticmethod
-    def _match_possible_loop(front_idx: int, back_idx: int):
-        # Performs RANSAC on both keyframes to determine how many supporters are there for them to be at the same place
-        back_frame = Frame(idx=back_idx, left_cam=PoseGraph._LeftCam0)
-        front_frame = Frame(idx=front_idx)
-        matched_indices = c.DEFAULT_MATCHER.match_descriptors(back_frame.descriptors, front_frame.descriptors)
-        if len(matched_indices) < PoseGraph.MatchCountThreshold:
-            # not enough matches between candidates - exit early
-            return back_frame, front_frame, matched_indices, []
-        r = RANSAC.from_frames(back_frame, front_frame, matched_indices)
-        supporter_indices, fl_cam = r.run()
-        front_frame.left_cam = fl_cam
-        return back_frame, front_frame, matched_indices, supporter_indices
+    def add_loop_and_optimize(self, bf: Frame, ff: Frame, match_idxs: List[Tuple[int, int]], supporters: np.ndarray):
+        """
+        The given Frames are a loop in the trajectory. This calculates their relative covariance and adds an edge to
+        the AdjacencyGraph with this covariance as weight. Then, a new constraint is added to the FactorGraph and it is
+        subsequently re-optimized.
+        """
+        back_idx, front_idx = bf.idx, ff.idx
+        back_symbol, front_symbol = self._keyframe_symbols[back_idx], self._keyframe_symbols[front_idx]
+        pose, cov = self._calculate_relative_pose_and_cov(bf, ff, match_idxs, supporters)
+
+        # Add edge to AdjacencyGraph
+        back_vertex_id = self._adjacency_graph.get_vertex_id(frame_idx=back_idx, symbol=back_symbol)
+        front_vertex_id = self._adjacency_graph.get_vertex_id(frame_idx=front_idx, symbol=front_symbol)
+        self._adjacency_graph.create_or_update_edge(v1_id=back_vertex_id, v2_id=front_vertex_id, cov=cov)
+
+        # Add constraint to FactorGraph
+        self._factor_graph.add_between_pose_factor(back_symbol, front_symbol, pose, cov)
+        self.optimize()
+
+    def extract_cameras(self) -> List[Camera]:
+        # after optimization is finished, returns a list of (relative) Cameras
+        # @raises RuntimeError if called before any optimization
+        absolute_cameras = []
+        for kf_idx in sorted(self._keyframe_symbols.keys()):
+            kf_symbol = self._keyframe_symbols[kf_idx]
+            pose = self._factor_graph.get_optimized_pose(kf_symbol)
+            abs_cam = u.calculate_camera_from_gtsam_pose(pose)
+            absolute_cameras.append(abs_cam)
+        return u.convert_to_relative_cameras(absolute_cameras)
 
     @staticmethod
     def _calculate_relative_pose_and_cov(bf: Frame, ff: Frame,
@@ -122,15 +88,6 @@ class PoseGraph:
         relative_pose = b.extract_keyframes_relative_pose()  # relative to $back_frame
         relative_cov = b.extract_keyframes_relative_covariance()
         return relative_pose, relative_cov
-
-    def _extract_cameras(self) -> List[Camera]:
-        absolute_cameras = []
-        for kf_idx in sorted(self._keyframe_symbols.keys()):
-            kf_symbol = self._keyframe_symbols[kf_idx]
-            pose = self._factor_graph.get_optimized_pose(kf_symbol)
-            abs_cam = u.calculate_camera_from_gtsam_pose(pose)
-            absolute_cameras.append(abs_cam)
-        return u.convert_to_relative_cameras(absolute_cameras)
 
     def __build_pose_graph(self, relative_cameras: List[Camera], relative_covariances: List[np.ndarray]):
         absolute_cameras = u.convert_to_absolute_cameras(relative_cameras)
