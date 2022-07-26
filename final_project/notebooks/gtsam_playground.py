@@ -1,4 +1,6 @@
+import os
 import matplotlib
+import pandas as pd
 from matplotlib import pyplot as plt
 
 import final_project.config as c
@@ -26,11 +28,15 @@ def init(N: int = 3450):
 
 
 # db = init()
-db = DataBase.from_pickle("tracksdb_23072022_1751", "camerasdb_23072022_1751")
+db = DataBase.from_pickle("tracks.pkl", "pnp_cameras.pkl")
 ba = BundleAdjustment(db._tracks_db, db._cameras_db)
 ba_cameras = ba.optimize(verbose=True)
 pg = PoseGraph(ba.get_keyframe_indices(), ba_cameras, ba.extract_relative_covariances())
 pg_cameras = pg.optimize(verbose=True)
+
+# save resulting cameras to file
+# pd.Series(ba_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "ba_cameras"))
+# pd.Series(pg_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "pg_cameras"))
 
 ###############
 
