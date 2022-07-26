@@ -1,23 +1,8 @@
-import os
 import cv2
 import numpy as np
 from typing import Tuple, List
 
-import final_project.config as c
-
-def read_images(idx: int):
-    """
-    Load a pair of KITTI images with the given index
-    """
-    image_name = "{:06d}.png".format(idx)
-    left_dir = "image_0"
-    left_path = os.path.join(c.DATA_READ_PATH, "sequences", "00", left_dir, image_name)
-    left_image = cv2.imread(left_path, cv2.IMREAD_GRAYSCALE)
-
-    right_dir = "image_1"
-    right_path = os.path.join(c.DATA_READ_PATH, "sequences", "00", right_dir, image_name)
-    right_image = cv2.imread(right_path, cv2.IMREAD_GRAYSCALE)
-    return left_image, right_image
+from final_project.logic.Utils import read_images
 
 
 class Matcher:
