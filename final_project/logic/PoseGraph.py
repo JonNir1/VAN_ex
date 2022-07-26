@@ -33,6 +33,7 @@ class PoseGraph:
         return self._factor_graph.is_optimized
 
     def optimize(self, max_loops: int = __MaxLoopsCount, verbose=False) -> List[Camera]:
+        # TODO: move this to a separate service file
         self._factor_graph.optimize()
         closed_loop_count = 0
         kf_idxs = sorted(self._keyframe_symbols.keys())
