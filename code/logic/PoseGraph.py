@@ -2,6 +2,8 @@ import gtsam
 import numpy as np
 from typing import List, Dict, Optional
 
+import pandas as pd
+
 import config as c
 from models.directions import Side
 from models.database import DataBase
@@ -94,6 +96,32 @@ class PoseGraph:
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, self._initial_estimates)
         self._optimized_estimates = optimizer.optimize()
         self._is_optimized = True
+
+    def extract_relative_cameras(self) -> pd.Series:
+        if not self._is_optimized:
+            raise RuntimeError("Cannot extract cameras from non-optimized PoseGraph")
+
+        # first keyframe
+        start_symbol = self.keyframe_symbols[0]
+        start_pose = self._optimized_estimates.atPose3(start_symbol)
+        start_cam = Camera.from_pose3(idx=0, pose=start_pose)
+
+        relative_cameras = [start_cam]
+        prev_cam = start_cam
+        for (fr_idx, fr_sym) in self.keyframe_symbols.items():
+            if fr_idx == 0:
+                # already handled the first keyframe
+                continue
+            pose = self._optimized_estimates.atPose3(fr_sym)
+            abs_cam = Camera.from_pose3(fr_idx, pose)
+            prev_R, prev_t = prev_cam.get_rotation_matrix(), prev_cam.get_translation_vector()
+            curr_R, curr_t = abs_cam.get_rotation_matrix(), abs_cam.get_translation_vector()
+            R = curr_R @ prev_R.T
+            t = curr_t - R @ prev_t
+            relative_cameras.append(Camera(idx=fr_idx, side=Side.LEFT, extrinsic_mat=np.hstack([R, t])))
+        s = pd.Series(data=relative_cameras, index=[cam.idx for cam in relative_cameras], name="pg_cameras")
+        s.index.name = DataBase.FRAMEIDX
+        return s
 
     def _preprocess_bundles(self, bundles: List[Bundle2]):
         # insert pose of keyframe0 to the graph
