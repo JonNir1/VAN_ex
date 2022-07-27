@@ -46,7 +46,7 @@ class FrameProcessor:
         # Finds Camera matrices for the front_frame, and supporting MutualMatch objects for these Cameras
         mutual_matches = c.MATCHER.match_between_frames(back_frame, front_frame)
         fl_cam, fr_cam, supporting_matches = Ransac().run(mutual_matches, back_frame.left_camera,
-                                                          back_frame.right_camera, self._verbose)
+                                                          back_frame.right_camera, False)
         front_frame.left_camera = fl_cam
         front_frame.right_camera = fr_cam
 
