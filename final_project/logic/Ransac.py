@@ -14,7 +14,7 @@ class RANSAC:
     _MinimalSetSize = 4
     _DefaultSuccessProbability = 0.9999
     _SupporterThreshold = 2
-    _MaxIterationCount = int(1e6)
+    _MaxIterationCount = int(1e5)
     __LeftCam0, __RightCam0 = Camera.read_initial_cameras()
 
     def __init__(self, back_landmarks: np.ndarray, front_features: np.ndarray,

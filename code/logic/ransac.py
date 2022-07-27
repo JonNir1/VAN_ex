@@ -15,6 +15,7 @@ class Ransac:
     MinimalSetSize = 4
     DefaultSuccessProbability = 0.9999
     MaxDistanceForSupporter = 2
+    _MaxIterationCount = int(1e5)
 
     def __init__(self, success_prob: float = DefaultSuccessProbability):
         self._success_probability = success_prob
@@ -146,7 +147,8 @@ class Ransac:
         nom = np.log(1 - self._success_probability)
         good_set_prob = np.power(1 - self._outlier_probability, self.MinimalSetSize)
         denom = np.log(1 - good_set_prob)
-        return int(nom / denom) + 1
+        res = int(nom / denom) + 1
+        return min(res, Ransac._MaxIterationCount)
 
     def __update_parameters(self, num_supporters: int, max_supporters: int):
         self._outlier_probability = 1 - num_supporters / max_supporters
