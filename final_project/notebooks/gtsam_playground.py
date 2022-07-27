@@ -9,9 +9,10 @@ import final_project.logic.GtsamUtils as gu
 from final_project.models.Camera import Camera
 from final_project.models.DataBase import DataBase
 from final_project.models.Trajectory import Trajectory
+from final_project.logic.PoseGraph import PoseGraph
 from final_project.service.InitialEstimateCalculator import IECalc
 from final_project.service.BundleAdjustment import BundleAdjustment
-from final_project.logic.PoseGraph import PoseGraph
+from final_project.service.LoopClosure import close_loops
 
 # change matplotlib's backend
 matplotlib.use("webagg")
@@ -33,7 +34,7 @@ db = DataBase.from_pickle("tracks.pkl", "pnp_cameras.pkl")
 ba = BundleAdjustment(db._tracks_db, db._cameras_db)
 ba_cameras = ba.optimize(verbose=True)
 pg = PoseGraph(ba.get_keyframe_indices(), ba_cameras, ba.extract_relative_covariances())
-pg_cameras = pg.optimize(verbose=True)
+pg_cameras = close_loops(pg, verbose=True)
 
 # save resulting cameras to file
 # pd.Series(ba_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "ba_cameras"))
