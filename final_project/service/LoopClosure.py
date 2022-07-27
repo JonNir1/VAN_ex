@@ -1,8 +1,8 @@
 import numpy as np
 from typing import List, Tuple
 
-import final_project.config as c
 from final_project.models.Camera import Camera
+from final_project.models.Matcher import DEFAULT_MATCHER
 from final_project.models.Frame import Frame
 from final_project.logic.Ransac import RANSAC
 from final_project.logic.PoseGraph import PoseGraph
@@ -55,7 +55,7 @@ def _match_possible_loop(front_idx: int, back_idx: int) -> Tuple[Frame, Frame, L
     # Performs RANSAC on both keyframes to determine how many supporters are there for them to be at the same place
     back_frame = Frame(idx=back_idx, left_cam=LeftCam0)
     front_frame = Frame(idx=front_idx)
-    matched_indices = c.DEFAULT_MATCHER.match_descriptors(back_frame.descriptors, front_frame.descriptors)
+    matched_indices = DEFAULT_MATCHER.match_descriptors(back_frame.descriptors, front_frame.descriptors)
     if len(matched_indices) < MatchCountThreshold:
         # not enough matches between candidates - exit early
         return back_frame, front_frame, matched_indices, np.array([])

@@ -3,12 +3,12 @@ from typing import Optional, Dict, Tuple
 
 import final_project.config as c
 from final_project.models.Camera import Camera
-from final_project.models.Matcher import Matcher
+from final_project.models.Matcher import Matcher, DEFAULT_MATCHER
 
 
 class Frame:
 
-    def __init__(self, idx: int, left_cam: Optional[Camera] = None, matcher: Matcher = c.DEFAULT_MATCHER):
+    def __init__(self, idx: int, left_cam: Optional[Camera] = None, matcher: Matcher = DEFAULT_MATCHER):
         if idx < 0 or idx >= c.NUM_FRAMES:
             raise IndexError(f"Frame index must be between 0 and {c.NUM_FRAMES - 1}, not {idx}")
         self.idx: int = idx

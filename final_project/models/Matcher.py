@@ -100,3 +100,7 @@ class Matcher:
                 index_params = dict(algorithm=0, trees=5)
             return cv2.FlannBasedMatcher(indexParams=index_params, searchParams=dict(checks=50))
         raise NotImplementedError(f"{matcher_type} Matcher is currently not supported")
+
+
+DEFAULT_MATCHER = Matcher(c.DEFAULT_DETECTOR_NAME, c.DEFAULT_MATCHER_NAME, c.SHOULD_CROSS_CHECK, c.SHOULD_USE_2NN)
+

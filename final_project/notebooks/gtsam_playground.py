@@ -7,6 +7,7 @@ import final_project.config as c
 import final_project.logic.Utils as u
 import final_project.logic.GtsamUtils as gu
 from final_project.models.Camera import Camera
+from final_project.models.Matcher import DEFAULT_MATCHER
 from final_project.models.DataBase import DataBase
 from final_project.models.Trajectory import Trajectory
 from final_project.logic.PoseGraph import PoseGraph
@@ -21,7 +22,7 @@ matplotlib.use("webagg")
 
 
 def init(N: int = 3450):
-    mtchr = c.DEFAULT_MATCHER
+    mtchr = DEFAULT_MATCHER
     iec = IECalc(matcher=mtchr)
     frames = iec.process(num_frames=N, verbose=True)
     database = DataBase(frames).prune_short_tracks(3)

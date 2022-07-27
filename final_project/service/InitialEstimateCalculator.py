@@ -3,7 +3,7 @@ from typing import List
 from itertools import count
 
 import final_project.config as c
-from final_project.models.Matcher import Matcher
+from final_project.models.Matcher import Matcher, DEFAULT_MATCHER
 from final_project.models.Camera import Camera
 from final_project.models.Frame import Frame
 from final_project.models.DataBase import DataBase
@@ -14,7 +14,7 @@ class IECalc:
 
     MinTrackLength = 3
 
-    def __init__(self, matcher: Matcher = c.DEFAULT_MATCHER):
+    def __init__(self, matcher: Matcher = DEFAULT_MATCHER):
         self._matcher = matcher
         self._cam0_l, self._cam0_r = Camera.read_initial_cameras()
         self._track_count = count(0)
