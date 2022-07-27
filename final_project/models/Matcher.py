@@ -28,22 +28,7 @@ class Matcher:
         kps_l, descs_l = self._detector.detectAndCompute(img_l, None)
         kps_r, descs_r = self._detector.detectAndCompute(img_r, None)
         matched_indices = self.match_descriptors(descs_l, descs_r)
-        features_list, descriptors_list = [], []
-        for idx_l, idx_r in matched_indices:
-            kp_l, kp_r = kps_l[idx_l], kps_r[idx_r]
-            xl, yl = kp_l.pt
-            xr, yr = kp_r.pt
-            if abs(yl - yr) >= Matcher._InlierVerticalThreshold:
-                # this match is not on the Epi-Polar line - ignore it
-                continue
-            if xl <= xr:
-                # this match is triangulated *behind* the cameras - ignore it
-                continue
-            features_list.append([xl, yl, xr, yr])
-            descriptors_list.append(descs_l[idx_l])
-        features = np.array(features_list)
-        descriptors = np.array(descriptors_list)
-        assert features.shape[0] == descriptors.shape[0], "Error extracting matching features"
+        features, descriptors = self._find_frame_inliers(kps_l, kps_r, descs_l, matched_indices)
         return features, descriptors
 
     def match_descriptors(self, descriptors1, descriptors2) -> List[Tuple[int, int]]:
@@ -62,6 +47,32 @@ class Matcher:
         good_matches = [first for (first, second) in matches_2nn if
                         first.distance / second.distance <= Matcher._2NN_Ratio]
         return good_matches
+
+    @staticmethod
+    def _find_frame_inliers(left_keypoints, right_keypoints, left_descriptors, matches):
+        """
+        Iterates over all matched features and removes those that have different y-coordinate on the left- and right-image
+        Returns:
+            - features - array of shape (4, N) containing N features' coordinates on both images (cl, yl, cr, yr)
+            - descriptors - array of N descriptors matching these features
+        """
+        features_list, descriptors_list = [], []
+        for idx_l, idx_r in matches:
+            kp_l, kp_r = left_keypoints[idx_l], right_keypoints[idx_r]
+            xl, yl = kp_l.pt
+            xr, yr = kp_r.pt
+            if abs(yl - yr) >= Matcher._InlierVerticalThreshold:
+                # this match is not on the Epi-Polar line - ignore it
+                continue
+            if xl <= xr:
+                # this match is triangulated *behind* the cameras - ignore it
+                continue
+            features_list.append([xl, yl, xr, yr])
+            descriptors_list.append(left_descriptors[idx_l])
+        features = np.array(features_list)
+        descriptors = np.array(descriptors_list)
+        assert features.shape[0] == descriptors.shape[0], "Error extracting matching features"
+        return features, descriptors
 
     @staticmethod
     def __create_cv2_detector(detector_type: str):
