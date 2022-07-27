@@ -3,6 +3,7 @@ import numpy as np
 from typing import List, Tuple
 
 import final_project.logic.Utils as u
+import final_project.logic.GtsamUtils as gu
 from final_project.models.Camera import Camera
 from final_project.models.FactorGraph import FactorGraph
 from final_project.models.AdjacencyGraph import AdjacencyGraph
@@ -66,7 +67,7 @@ class PoseGraph:
         for kf_idx in sorted(self._keyframe_symbols.keys()):
             kf_symbol = self._keyframe_symbols[kf_idx]
             pose = self._factor_graph.get_optimized_pose(kf_symbol)
-            abs_cam = u.calculate_camera_from_gtsam_pose(pose)
+            abs_cam = gu.calculate_camera_from_gtsam_pose(pose)
             absolute_cameras.append(abs_cam)
         return u.convert_to_relative_cameras(absolute_cameras)
 
@@ -93,7 +94,7 @@ class PoseGraph:
         absolute_cameras = u.convert_to_absolute_cameras(relative_cameras)
         for i, (kf_idx, kf_symbol) in enumerate(self._keyframe_symbols.items()):
             abs_cam = absolute_cameras[kf_idx]
-            abs_pose = u.calculate_gtsam_pose(abs_cam)
+            abs_pose = gu.calculate_gtsam_pose(abs_cam)
             self._factor_graph.add_initial_estimate(kf_symbol, abs_pose)
             v = self._adjacency_graph.create_or_update_vertex(frame_idx=kf_idx, symbol=kf_symbol)
             assert v is not None

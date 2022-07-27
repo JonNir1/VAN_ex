@@ -1,5 +1,4 @@
 import time
-import math
 import gtsam
 import pandas as pd
 import numpy as np
@@ -7,6 +6,7 @@ from typing import List
 
 import final_project.config as c
 import final_project.logic.Utils as u
+import final_project.logic.GtsamUtils as gu
 from final_project.logic.Bundle import Bundle
 from final_project.models.Camera import Camera
 
@@ -106,7 +106,7 @@ class BundleAdjustment:
         camera_symbols = cameras.index.map(lambda idx: gtsam.symbol('c', idx))
         camera_symbols = camera_symbols.to_series(index=cameras.index, name=c.Symbol)
         abs_cameras = u.convert_to_absolute_cameras(cameras)
-        abs_poses = pd.Series([u.calculate_gtsam_pose(abs_cam) for abs_cam in abs_cameras], name=c.AbsolutePose)
+        abs_poses = pd.Series([gu.calculate_gtsam_pose(abs_cam) for abs_cam in abs_cameras], name=c.AbsolutePose)
         cameras_df = pd.concat([cameras, camera_symbols, abs_poses], axis=1)
         return cameras_df
 

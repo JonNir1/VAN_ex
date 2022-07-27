@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 
 import final_project.config as c
 import final_project.logic.Utils as u
+import final_project.logic.GtsamUtils as gu
 from final_project.models.Camera import Camera
 from final_project.models.DataBase import DataBase
 from final_project.models.Trajectory import Trajectory
@@ -86,7 +87,7 @@ for i, b in enumerate(ba._bundles):
     start_pose = b._cameras.loc[start_idx, c.OptPose]
     for p in b._cameras[c.OptPose]:
         between_pose = start_pose.between(p)
-        bundle_abs_cam = u.calculate_camera_from_gtsam_pose(between_pose)
+        bundle_abs_cam = gu.calculate_camera_from_gtsam_pose(between_pose)
         new_R = bundle_abs_cam.R @ R0
         new_t = bundle_abs_cam.R @ t0 + bundle_abs_cam.t
         opt_cams.append(Camera.from_Rt(new_R, new_t))
