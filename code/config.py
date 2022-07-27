@@ -1,7 +1,7 @@
 import os
 import cv2
 
-from models.matcher import Matcher
+from models.matcher import Matcher, create_detector
 
 Epsilon = 1e-8
 
@@ -15,22 +15,12 @@ MAIN_DIRECTORY = "/mnt/c/Users/nirjo/Documents/University/Masters/Computer Visio
 DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')
 DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "docs/db")
 
-
-def create_detector(detector_name: str):
-    # create a cv2 feature detector
-    detector_name = detector_name.upper()
-    if detector_name == "ORB":
-        return cv2.ORB_create()
-    if detector_name == "SIFT":
-        return cv2.SIFT_create()
-    raise NotImplementedError(f"We currently do not support the {detector_name} detector")
-
-
 DEFAULT_DETECTOR_NAME = "sift"
-DETECTOR = create_detector(DEFAULT_DETECTOR_NAME)
-
 DEFAULT_MATCHER_NAME = "BF"
 SHOULD_CROSS_CHECK = True
-MATCHER = Matcher(DEFAULT_MATCHER_NAME, SHOULD_CROSS_CHECK)
+SHOULD_USE_2NN = False
+
+DETECTOR = create_detector(DEFAULT_DETECTOR_NAME)
+MATCHER = Matcher(DEFAULT_MATCHER_NAME, SHOULD_CROSS_CHECK, SHOULD_USE_2NN)
 
 
