@@ -10,6 +10,7 @@ from models.gtsam_frame import GTSAMFrame
 
 
 class Bundle2:
+    _Max_Landmark_Distance = 300
     _PixelCovariance = 1
     _LocationCovariance = 0.01
     _AngleCovariance = (0.1 * np.pi / 180) ** 2
@@ -154,7 +155,7 @@ class Bundle2:
             _, pose, stereo_params = frames[last_frame_idx]
             stereo_cameras = gtsam.StereoCamera(pose, stereo_params)
             landmark_3D = stereo_cameras.backproject(gtsam.StereoPoint2(x_l, x_r, y))
-            if landmark_3D[2] <= 0 or landmark_3D[2] >= 400:
+            if landmark_3D[2] <= 0 or landmark_3D[2] >= Bundle2._Max_Landmark_Distance:
                 # the Z coordinate of the landmark is behind the camera or too distant
                 # do not include this landmark in the bundle
                 continue
