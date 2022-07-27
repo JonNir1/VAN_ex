@@ -40,7 +40,7 @@ dba.cameras_db = pd.read_pickle(os.path.join(c.DATA_WRITE_PATH, 'relative_camera
 traj_opt = TrajectoryOptimizer2(tracks=dba.tracks_db, relative_cams=dba.cameras_db[DataBase.CAM_LEFT])
 traj_opt.optimize(verbose=True)
 traj_cameras = pd.Series(traj_opt.extract_all_relative_cameras())
-traj_cameras.to_pickle(os.path.join(c.DATA_WRITE_PATH, "bundle_cameras"))
+# traj_cameras.to_pickle(os.path.join(c.DATA_WRITE_PATH, "bundle_cameras"))
 
 
 #########
@@ -48,7 +48,7 @@ traj_cameras.to_pickle(os.path.join(c.DATA_WRITE_PATH, "bundle_cameras"))
 pg = PoseGraph(traj_opt.bundles)
 pg.optimize_with_loops(verbose=True)
 pg_cameras = pg.extract_relative_cameras()
-pg_cameras.to_pickle(os.path.join(c.DATA_WRITE_PATH, "posegraph_cameras"))
+# pg_cameras.to_pickle(os.path.join(c.DATA_WRITE_PATH, "posegraph_cameras"))
 
 elapsed = time.time() - start
 
