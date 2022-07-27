@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from typing import Tuple, List
 
-from final_project.logic.Utils import read_images
+import final_project.config as c
 
 
 class Matcher:
@@ -24,7 +24,7 @@ class Matcher:
             features - array of shape (N, 4) where each line is a match and each column is the X/Y coordinate on either image
             descriptors - array of shape (N,) containing the image1 descriptors of each feature
         """
-        img_l, img_r = read_images(idx)
+        img_l, img_r = c.read_images(idx)
         kps_l, descs_l = self._detector.detectAndCompute(img_l, None)
         kps_r, descs_r = self._detector.detectAndCompute(img_r, None)
         matched_indices = self.match_descriptors(descs_l, descs_r)
