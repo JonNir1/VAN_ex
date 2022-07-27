@@ -1,3 +1,4 @@
+import time
 import gtsam
 import numpy as np
 from typing import List, Dict, Optional
@@ -39,6 +40,10 @@ class PoseGraph:
         return self._factor_graph.error(self._initial_estimates)
 
     def optimize_with_loops(self, max_loops_to_close: Optional[int] = None, verbose=False):
+        start_time, minutes_counter = time.time(), 0
+        if verbose:
+            print("\nStarting loop closure...")
+
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, self._initial_estimates)
         intermediate_results = optimizer.optimize()
 
@@ -51,6 +56,11 @@ class PoseGraph:
             for j in range(i - self.KeyframeDistanceThreshold):  # do not match bundles that are too close to each other
                 if closed_loops_count > max_loops_to_close:
                     break
+                curr_minute = int((time.time() - start_time) / 60)
+                if verbose and curr_minute > minutes_counter:
+                    minutes_counter = curr_minute
+                    print(f"\tElapsed Minutes:\t{minutes_counter}\n\tCurrent Keyframe:\t{i}\n")
+
                 back_idx = keyframe_indices[j]
                 if not self._is_within_mahalanobis_range(intermediate_results, front_idx, back_idx):
                     # this pair is not a possible loop, continue to next pair
