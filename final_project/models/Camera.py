@@ -3,6 +3,7 @@ import numpy as np
 
 import final_project.config as c
 
+
 def read_first_camera_matrices(path: str = ""):
     """
     Load camera matrices from the KITTY dataset
