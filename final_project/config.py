@@ -12,9 +12,9 @@ NUM_FRAMES = 3450
 BUNDLE_SIZE = 15
 
 DEFAULT_DETECTOR_NAME = "sift"
-DEFAULT_MATCHER_NAME = "flann"
-SHOULD_CROSS_CHECK = False
-SHOULD_USE_2NN = True
+DEFAULT_MATCHER_NAME = "bf"
+SHOULD_CROSS_CHECK = True
+SHOULD_USE_2NN = False
 
 # Global Variable Names
 FrameIdx, TrackIdx = "FrameIdx", "TrackIdx"
