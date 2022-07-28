@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from typing import List, Tuple
 
@@ -23,6 +24,7 @@ _Loop_Matcher = Matcher(detector_type=c.DEFAULT_DETECTOR_NAME, matcher_type="fla
 
 
 def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=False) -> Tuple[List[Camera], pd.DataFrame]:
+    start_time, minutes_counter = time.time(), 0
     pg.optimize()
     closed_loop_count = 0
     kf_idxs = sorted(pg.keyframe_indices)
@@ -34,6 +36,11 @@ def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=Fal
         for j in range(i - KeyframeDistanceThreshold):
             if closed_loop_count >= max_loops_count:
                 break
+            curr_minute = int((time.time() - start_time) / 60)
+            if verbose and curr_minute > minutes_counter:
+                minutes_counter = curr_minute
+                print(f"\tElapsed Minutes:\t{minutes_counter}\n\tCurrent Keyframe ID:\t{front_idx}\n")
+
             back_idx = kf_idxs[j]
             mahal_dist = pg.calculate_mahalanobis_distance(back_idx, front_idx)
             if mahal_dist < 0 or mahal_dist > MahalanobisThreshold:

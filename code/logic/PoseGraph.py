@@ -67,7 +67,7 @@ class PoseGraph:
                 curr_minute = int((time.time() - start_time) / 60)
                 if verbose and curr_minute > minutes_counter:
                     minutes_counter = curr_minute
-                    print(f"\tElapsed Minutes:\t{minutes_counter}\n\tCurrent Keyframe:\t{i}\n")
+                    print(f"\tElapsed Minutes:\t{minutes_counter}\n\tCurrent Keyframe ID:\t{front_idx}\n")
 
                 back_idx = keyframe_indices[j]
                 if not self._is_within_mahalanobis_range(intermediate_results, front_idx, back_idx):
