@@ -76,3 +76,6 @@ class FactorGraph:
     def get_post_optimization_error(self) -> float:
         return self._factor_graph.error(self._optimized_results)
 
+    def calculate_optimization_error_reduction(self) -> float:
+        return self.get_pre_optimization_error() - self.get_post_optimization_error()
+

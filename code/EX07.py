@@ -46,7 +46,7 @@ traj_cameras = pd.Series(traj_opt.extract_all_relative_cameras())
 #########
 
 pg = PoseGraph(traj_opt.bundles)
-pg.optimize_with_loops(verbose=True)
+loop_results = pg.optimize_with_loops(verbose=True)
 pg_cameras = pg.extract_relative_cameras()
 # pg_cameras.to_pickle(os.path.join(c.DATA_WRITE_PATH, "posegraph_cameras"))
 

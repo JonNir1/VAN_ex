@@ -23,6 +23,9 @@ CamL, CamR = "CamL", "CamR"
 Symbol = "Symbol"
 InitialPose, OptPose = "InitPose", "OptPose"
 AbsolutePose = "AbsPose"
+FrontFrame, BackFrame = "FrontFrame", "BackFrame"
+OutlierPercent = "OutlierPercent"
+ErrorDiff = "ErrorDiff"
 
 
 def read_images(idx: int):

@@ -1,7 +1,9 @@
 import os
+import time
 import matplotlib
 import pandas as pd
 from matplotlib import pyplot as plt
+from datetime import datetime
 
 import final_project.config as c
 import final_project.logic.Utils as u
@@ -20,8 +22,10 @@ matplotlib.use("webagg")
 
 ###################################################
 
+start = time.time()
 
-def init(N: int = 3450):
+
+def init(N: int = c.NUM_FRAMES):
     mtchr = DEFAULT_MATCHER
     iec = IECalc(matcher=mtchr)
     frames = iec.process(num_frames=N, verbose=True)
@@ -30,16 +34,20 @@ def init(N: int = 3450):
     return database
 
 
-# db = init()
-db = DataBase.from_pickle("tracks.pkl", "pnp_cameras.pkl")
+db = init()
+# db = DataBase.from_pickle("tracks2.pkl", "pnp_cameras2.pkl")
 ba = BundleAdjustment(db._tracks_db, db._cameras_db)
 ba_cameras = ba.optimize(verbose=True)
 pg = PoseGraph(ba.get_keyframe_indices(), ba_cameras, ba.extract_relative_covariances())
-pg_cameras = close_loops(pg, verbose=True)
+pg_cameras, loop_results = close_loops(pg, verbose=True)
 
 # save resulting cameras to file
-# pd.Series(ba_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "ba_cameras"))
-# pd.Series(pg_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "pg_cameras"))
+# filename_suffix = f"{datetime.now().strftime('%d%m%Y_%H%M')}.pkl"
+# pd.Series(ba_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "ba_cameras" + filename_suffix))
+# pd.Series(pg_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "pg_cameras" + filename_suffix))
+# loop_results.to_pickle(os.path.join(c.DATA_WRITE_PATH, "loop_results" + filename_suffix))
+
+elapsed = time.time() - start
 
 ###############
 

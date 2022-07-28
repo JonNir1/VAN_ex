@@ -16,6 +16,10 @@ from logic.Bundle2 import Bundle2
 from logic.ransac import Ransac
 from logic.db_adapter import DBAdapter
 
+FrontFrame, BackFrame = "FrontFrame", "BackFrame"
+OutlierPercent = "OutlierPercent"
+ErrorDiff = "ErrorDiff"
+
 
 class PoseGraph:
     KeyframeDistanceThreshold = 10
@@ -42,7 +46,7 @@ class PoseGraph:
             return self._factor_graph.error(self._optimized_estimates)
         return self._factor_graph.error(self._initial_estimates)
 
-    def optimize_with_loops(self, max_loops_to_close: Optional[int] = None, verbose=False):
+    def optimize_with_loops(self, max_loops_to_close: Optional[int] = None, verbose=False) -> pd.DataFrame:
         start_time, minutes_counter = time.time(), 0
         if verbose:
             print("\nStarting loop closure...")
@@ -54,6 +58,7 @@ class PoseGraph:
         max_loops_to_close = len(keyframe_indices) + 1 if max_loops_to_close is None else max_loops_to_close
 
         closed_loops_count = 0
+        loop_results = []
         for i, front_idx in enumerate(keyframe_indices):
             front_symbol = self.keyframe_symbols[front_idx]
             for j in range(i - self.KeyframeDistanceThreshold):  # do not match bundles that are too close to each other
@@ -91,6 +96,7 @@ class PoseGraph:
                 intermediate_results = optimizer.optimize()
                 curr_err = self._factor_graph.error(intermediate_results)
                 err_diff = prev_err - curr_err
+                loop_results.append((front_idx, back_idx, outlier_percent, err_diff))
                 closed_loops_count = closed_loops_count + 1
 
                 if verbose:
@@ -103,6 +109,7 @@ class PoseGraph:
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
         self._optimized_estimates = optimizer.optimize()
         self._is_optimized = True
+        return pd.DataFrame(loop_results, columns=[FrontFrame, BackFrame, OutlierPercent, ErrorDiff])
 
     def optimize_without_loops(self):
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, self._initial_estimates)

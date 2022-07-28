@@ -1,6 +1,8 @@
 import numpy as np
 from typing import List, Tuple
 
+import pandas as pd
+
 import final_project.config as c
 from final_project.models.Camera import Camera
 from final_project.models.Matcher import Matcher
@@ -20,10 +22,12 @@ LeftCam0, RightCam0 = Camera.read_initial_cameras()
 _Loop_Matcher = Matcher(detector_type=c.DEFAULT_DETECTOR_NAME, matcher_type="flann", use_crosscheck=False, use_2nn=True)
 
 
-def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=False):
+def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=False) -> Tuple[List[Camera], pd.DataFrame]:
     pg.optimize()
     closed_loop_count = 0
     kf_idxs = sorted(pg.keyframe_indices)
+
+    loop_results = []
     for i, front_idx in enumerate(kf_idxs):
         if closed_loop_count >= max_loops_count:
             break
@@ -42,18 +46,21 @@ def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=Fal
                 continue
 
             # reached here if this is a valid loop
-            if verbose:
-                print(f"Loop #{closed_loop_count + 1}")
-                print(f"\tFrame{front_idx}\t<-->\tFrame{back_idx}")
-                print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
             # Add edge to AdjacencyGraph & constraint to FactorGraph, then optimize
             # TODO: instead of optimizing on each loop, optimize every 5 KFs / 5 loops
-            pg.add_loop_and_optimize(back_frame, front_frame, matched_indices, supporter_indices)
+            err_diff = pg.add_loop_and_optimize(back_frame, front_frame, matched_indices, supporter_indices)
             closed_loop_count += 1
+            loop_results.append((front_idx, back_idx, outlier_percent, err_diff))
+            if verbose:
+                print(f"Loop #{closed_loop_count}")
+                print(f"\tFrame{front_idx}\t<-->\tFrame{back_idx}")
+                print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
+                print(f"\tError Difference:\t{err_diff:.2f}")
 
     # one last optimization just to be sure
     pg.optimize()
-    return pg.extract_cameras()
+    df = pd.DataFrame(loop_results, columns=[c.FrontFrame, c.BackFrame, c.OutlierPercent, c.ErrorDiff])
+    return pg.extract_cameras(), df
 
 
 def _match_possible_loop(front_idx: int, back_idx: int) -> Tuple[Frame, Frame, List[Tuple[int, int]], np.ndarray]:

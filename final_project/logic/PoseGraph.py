@@ -41,7 +41,7 @@ class PoseGraph:
         delta_cam = self._factor_graph.extract_relative_camera_matrix(front_symbol, back_symbol)
         return delta_cam @ cov @ delta_cam
 
-    def add_loop_and_optimize(self, bf: Frame, ff: Frame, match_idxs: List[Tuple[int, int]], supporters: np.ndarray):
+    def add_loop_and_optimize(self, bf: Frame, ff: Frame, match_idxs: List[Tuple[int, int]], supporters: np.ndarray) -> float:
         """
         The given Frames are a loop in the trajectory. This calculates their relative covariance and adds an edge to
         the AdjacencyGraph with this covariance as weight. Then, a new constraint is added to the FactorGraph and it is
@@ -59,6 +59,8 @@ class PoseGraph:
         # Add constraint to FactorGraph
         self._factor_graph.add_between_pose_factor(back_symbol, front_symbol, pose, cov)
         self.optimize()
+        err_diff = self._factor_graph.calculate_optimization_error_reduction()
+        return err_diff
 
     def extract_cameras(self) -> List[Camera]:
         # after optimization is finished, returns a list of (relative) Cameras
