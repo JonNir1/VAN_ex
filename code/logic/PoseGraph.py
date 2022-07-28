@@ -75,11 +75,7 @@ class PoseGraph:
                     continue
 
                 # need to add this as constraint to Factor Graph & as edge Locations Graph
-                if verbose:
-                    print(f"Loop #{closed_loops_count + 1}")
-                    print(f"\tFrame{front_idx}\t<-->\tFrame{back_idx}")
-                relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame,
-                                                                                 supporters)
+                relative_pose, relative_cov = self._calculate_loop_relative_pose(back_frame, front_frame, supporters)
                 noise_model = gtsam.noiseModel.Gaussian.Covariance(relative_cov)
                 back_symbol = self.keyframe_symbols[back_idx]
                 factor = gtsam.BetweenFactorPose3(back_symbol, front_symbol, relative_pose, noise_model)
@@ -94,11 +90,14 @@ class PoseGraph:
                 optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
                 intermediate_results = optimizer.optimize()
                 curr_err = self._factor_graph.error(intermediate_results)
+                err_diff = prev_err - curr_err
                 closed_loops_count = closed_loops_count + 1
 
                 if verbose:
+                    print(f"Loop #{closed_loops_count}")
+                    print(f"\tFrame{front_idx}\t<-->\tFrame{back_idx}")
                     print(f"\tOutlier Percent:\t{outlier_percent:.2f}%")
-                    print(f"\tError Difference:\t{prev_err - curr_err}\n")
+                    print(f"\tError Difference:\t{err_diff}\n")
 
         # final optimization just to be sure
         optimizer = gtsam.LevenbergMarquardtOptimizer(self._factor_graph, intermediate_results)
