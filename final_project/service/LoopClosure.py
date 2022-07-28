@@ -1,8 +1,9 @@
 import numpy as np
 from typing import List, Tuple
 
+import final_project.config as c
 from final_project.models.Camera import Camera
-from final_project.models.Matcher import DEFAULT_MATCHER
+from final_project.models.Matcher import Matcher
 from final_project.models.Frame import Frame
 from final_project.logic.Ransac import RANSAC
 from final_project.logic.PoseGraph import PoseGraph
@@ -13,6 +14,10 @@ MahalanobisThreshold = 2.0
 MatchCountThreshold = 100
 OutlierPercentThreshold = 20.0
 LeftCam0, RightCam0 = Camera.read_initial_cameras()
+
+# for some reason, loop matching works poorly with BF matcher (the default we use), but works
+# fast and well with these parameters
+_Loop_Matcher = Matcher(detector_type=c.DEFAULT_DETECTOR_NAME, matcher_type="flann", use_crosscheck=False, use_2nn=True)
 
 
 def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=False):
@@ -53,9 +58,9 @@ def close_loops(pg: PoseGraph, max_loops_count: int = MaxLoopsCount, verbose=Fal
 
 def _match_possible_loop(front_idx: int, back_idx: int) -> Tuple[Frame, Frame, List[Tuple[int, int]], np.ndarray]:
     # Performs RANSAC on both keyframes to determine how many supporters are there for them to be at the same place
-    back_frame = Frame(idx=back_idx, left_cam=LeftCam0)
-    front_frame = Frame(idx=front_idx)
-    matched_indices = DEFAULT_MATCHER.match_descriptors(back_frame.descriptors, front_frame.descriptors)
+    back_frame = Frame(idx=back_idx, left_cam=LeftCam0, matcher=_Loop_Matcher)
+    front_frame = Frame(idx=front_idx, matcher=_Loop_Matcher)
+    matched_indices = _Loop_Matcher.match_descriptors(back_frame.descriptors, front_frame.descriptors)
     if len(matched_indices) < MatchCountThreshold:
         # not enough matches between candidates - exit early
         return back_frame, front_frame, matched_indices, np.array([])

@@ -1,17 +1,16 @@
 import time
 import gtsam
 import numpy as np
+import pandas as pd
 from typing import List, Dict, Optional
 
-import pandas as pd
-
-import config as c
 from models.directions import Side
 from models.database import DataBase
 from models.camera import Camera
 from models.frame import Frame
 from models.match import MutualMatch
 from models.Graph import Graph
+from models.matcher import Matcher
 from models.gtsam_frame import GTSAMFrame
 from logic.Bundle2 import Bundle2
 from logic.ransac import Ransac
@@ -23,6 +22,10 @@ class PoseGraph:
     MahalanobisThreshold = 2.0
     MatchCountThreshold = 100
     OutlierPercentThreshold = 20.0
+
+    # for some reason, loop matching works poorly with BF matcher (the default we use), but works
+    # fast and well with these parameters
+    _Loop_Matcher = Matcher(matcher_name="flann", cross_check=False, use_2nn=True)
 
     def __init__(self, bundles: List[Bundle2]):
         self.keyframe_symbols: Dict[int, int] = dict()
@@ -197,12 +200,11 @@ class PoseGraph:
         default_camera_right = default_camera_left.calculate_right_camera()
         back_frame = Frame(idx=back_idx, left_cam=default_camera_left, right_cam=default_camera_right)
         front_frame = Frame(front_idx)
-        matches = c.MATCHER.match_between_frames(back_frame, front_frame)
+        matches = PoseGraph._Loop_Matcher.match_between_frames(back_frame, front_frame)
         if len(matches) < PoseGraph.MatchCountThreshold:
             # not enough matches between candidates - exit early
             return back_frame, front_frame, matches, []
-        fl_cam, fr_cam, supporters = Ransac().run(matches, bl_cam=back_frame.left_camera,
-                                                  br_cam=back_frame.right_camera)
+        fl_cam, fr_cam, supporters = Ransac().run(matches, bl_cam=back_frame.left_camera, br_cam=back_frame.right_camera)
         fl_cam.idx = front_idx  # for indexing consistency
         fr_cam.idx = front_idx  # for indexing consistency
         front_frame.left_camera = fl_cam
