@@ -49,7 +49,7 @@ class Trajectory:
     def Z(self) -> np.ndarray:
         return self._get_axis(Axis.Z)
 
-    def calculate_distance(self, other, axis: Axis = Axis.All) -> np.ndarray:
+    def calculate_distance(self, other, axis: Axis = Axis.ALL) -> np.ndarray:
         if not isinstance(other, Trajectory):
             raise TypeError("other must be of type Trajectory")
         self_coords = self._get_axis(axis)
@@ -63,7 +63,7 @@ class Trajectory:
             return self.coordinates[1]
         if axis == Axis.Z:
             return self.coordinates[2]
-        if axis == Axis.All:
+        if axis == Axis.ALL:
             return self.coordinates
         raise TypeError("axis must be of type Axis")
 
