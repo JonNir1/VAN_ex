@@ -26,19 +26,16 @@ class Trajectory:
         self.coordinates = coords
 
     @staticmethod
-    def read_ground_truth(num_frames: int = c.NUM_FRAMES):
+    def from_ground_truth(num_frames: int = c.NUM_FRAMES):
         """
         Reads KITTI's ground-truth Cameras and calculates the trajectories from them
         """
-        path = os.path.join(c.DATA_READ_PATH, 'poses', '00.txt')
+        abs_cameras = u.read_ground_truth_cameras(use_relative=False)
         coords = np.zeros((num_frames, 3))
-        f = open(path, 'r')
-        for i, line in enumerate(f.readlines()):
+        for i, cam in enumerate(abs_cameras):
             if i == num_frames:
                 break
-            mat = np.array(line.split(), dtype=float).reshape((3, 4))
-            R, t = mat[:, :3], mat[:, 3:]
-            coords[i] -= (R.T @ t).reshape((3,))
+            coords[i] -= (cam.R @ cam.t).reshape((3,))
         return Trajectory(coords)
 
     @staticmethod

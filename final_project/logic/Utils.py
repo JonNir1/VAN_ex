@@ -1,10 +1,28 @@
 import os
-import cv2
 import math
+import numpy as np
 from typing import Iterable, List
 
 import final_project.config as c
 from final_project.models.Camera import Camera
+
+
+def read_ground_truth_cameras(use_relative=False) -> List[Camera]:
+    """
+    Reads KITTI's ground-truth Cameras in absolute coordinates (i.e., first Camera's location)
+    If $use_relative is True, convert the cameras to relative coordinates (relative to previous Camera's location)
+    """
+    path = os.path.join(c.DATA_READ_PATH, 'poses', '00.txt')
+    cameras = []
+    f = open(path, 'r')
+    for i, line in enumerate(f.readlines()):
+        mat = np.array(line.split(), dtype=float).reshape((3, 4))
+        R, t = mat[:, :3], mat[:, 3:]
+        cam = Camera.from_Rt(R, t)
+        cameras.append(cam)
+    if use_relative:
+        return convert_to_relative_cameras(cameras)
+    return cameras
 
 
 def convert_to_absolute_cameras(cams: Iterable[Camera]) -> List[Camera]:
