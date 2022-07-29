@@ -1,5 +1,7 @@
 import os
 import numpy as np
+from scipy.spatial.transform import Rotation as rot
+from typing import Tuple
 
 import final_project.config as c
 
@@ -81,6 +83,11 @@ class Camera:
         right_rot = Camera._RightRotation @ self.R
         right_trans = Camera._RightRotation @ self.t + Camera._RightTranslation
         return Camera.from_Rt(right_rot, right_trans)
+
+    def calculate_euler_angles(self, use_degrees=True) -> Tuple[float, float, float]:
+        scipy_rot = rot.from_matrix(self.R)
+        yaw, pitch, roll = scipy_rot.as_euler('zyx', degrees=use_degrees)
+        return yaw, pitch, roll
 
     @classmethod
     def __init_class_attributes(cls) -> bool:
