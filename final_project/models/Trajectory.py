@@ -27,11 +27,15 @@ class Trajectory:
         return Trajectory(coords.T)
 
     @staticmethod
-    def from_relative_cameras(cameras: Iterable[Camera]):
-        absolute_cameras = u.convert_to_absolute_cameras(cameras)
-        coords_list = [cam.calculate_coordinates() for cam in absolute_cameras]
+    def from_absolute_cameras(cameras: Iterable[Camera]):
+        coords_list = [cam.calculate_coordinates() for cam in cameras]
         coords = np.array(coords_list)
         return Trajectory(coords)
+
+    @staticmethod
+    def from_relative_cameras(cameras: Iterable[Camera]):
+        absolute_cameras = u.convert_to_absolute_cameras(cameras)
+        return Trajectory.from_absolute_cameras(absolute_cameras)
 
     @property
     def X(self) -> np.ndarray:
