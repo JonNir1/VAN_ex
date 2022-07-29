@@ -1,18 +1,10 @@
-import os
 import numpy as np
 from typing import Iterable
-import enum
 
 import final_project.config as c
 import final_project.logic.Utils as u
+from final_project.logic.Utils import Axis
 from final_project.models.Camera import Camera
-
-
-class Axis(enum.Enum):
-    X = 0
-    Y = 1
-    Z = 2
-    All = 3
 
 
 class Trajectory:
@@ -31,12 +23,8 @@ class Trajectory:
         Reads KITTI's ground-truth Cameras and calculates the trajectories from them
         """
         abs_cameras = u.read_ground_truth_cameras(use_relative=False)
-        coords = np.zeros((num_frames, 3))
-        for i, cam in enumerate(abs_cameras):
-            if i == num_frames:
-                break
-            coords[i] -= (cam.R @ cam.t).reshape((3,))
-        return Trajectory(coords)
+        coords = np.array([cam.calculate_coordinates() for cam in abs_cameras])
+        return Trajectory(coords.T)
 
     @staticmethod
     def from_relative_cameras(cameras: Iterable[Camera]):

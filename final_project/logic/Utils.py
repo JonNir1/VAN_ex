@@ -1,10 +1,24 @@
 import os
 import math
+import enum
 import numpy as np
 from typing import Iterable, List
 
 import final_project.config as c
 from final_project.models.Camera import Camera
+
+
+class Axis(enum.Enum):
+    X = 0
+    Y = 1
+    Z = 2
+    All = 3
+
+
+class EulerAngle(enum.Enum):
+    YAW = 0
+    PITCH = 1
+    ROLL = 2
 
 
 def read_ground_truth_cameras(use_relative=False) -> List[Camera]:
