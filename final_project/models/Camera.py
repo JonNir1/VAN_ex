@@ -1,4 +1,5 @@
 import os
+import math
 import numpy as np
 
 import final_project.config as c
@@ -81,6 +82,33 @@ class Camera:
         right_rot = Camera._RightRotation @ self.R
         right_trans = Camera._RightRotation @ self.t + Camera._RightTranslation
         return Camera.from_Rt(right_rot, right_trans)
+
+    def angles_between(self, other, use_degrees=True) -> np.ndarray:
+        assert isinstance(other, Camera), "other object must be a Camera"
+        relative_rotation = self.R.T @ other.R
+        return Camera._rotation_to_angles(relative_rotation, use_degrees)
+
+    @staticmethod
+    def _rotation_to_angles(R: np.ndarray, use_degrees=True) -> np.ndarray:
+        # Converts a rotation matrix to yaw-pitch-roll (Euler angles)
+        # see https://learnopencv.com/rotation-matrix-to-euler-angles/
+        assert R.shape == (3, 3), f"R should be a 3×3 matrix, but shape is {R.shape}"
+        assert np.linalg.norm(R.T @ R - np.eye(3)) <= 1e-6, "R should be a Unitary matrix"
+        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+        singular = sy < 1e-6
+        if singular:
+            roll = math.atan2(-R[1, 2], R[1, 1])
+            pitch = math.atan2(-R[2, 0], sy)
+            yaw = 0
+        else:
+            roll = math.atan2(R[2, 1], R[2, 2])
+            pitch = math.atan2(-R[2, 0], sy)
+            yaw = math.atan2(R[1, 0], R[0, 0])
+        if use_degrees:
+            yaw = math.degrees(yaw)
+            pitch = math.degrees(pitch)
+            roll = math.degrees(roll)
+        return np.array([yaw, pitch, roll])
 
     @classmethod
     def __init_class_attributes(cls) -> bool:
