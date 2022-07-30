@@ -17,7 +17,8 @@ class BundleAdjustment:
         self._tracks = self.__preprocess_tracks(tracks)
         self._cameras = self.__preprocess_cameras(cameras)
         self._keyframe_indices = u.choose_keyframe_indices(max_frame_idx=tracks.index.unique(level=c.FrameIdx).max(), bundle_size=c.BUNDLE_SIZE)
-        self._bundles: List[Bundle] = []
+        num_bundles = len(self._keyframe_indices) - 1
+        self._bundles: List[Bundle] = [self._build_bundle(i) for i in range(num_bundles)]
         self._reduced_error = 0.0
 
     def get_keyframe_indices(self) -> List[int]:
@@ -29,12 +30,8 @@ class BundleAdjustment:
         if verbose:
             print(f"Starting trajectory optimization for {num_bundles} Bundles...\n")
 
-        for i in range(num_bundles):
-            b = self._build_bundle(bundle_id=i)
-            error_reduction = b.adjust()
-            self._reduced_error += error_reduction
-            self._bundles.append(b)
-
+        for i, b in enumerate(self._bundles):
+            self._reduced_error += b.adjust()
             # print every minute if verbose:
             curr_minute = int((time.time() - start_time) / 60)
             if verbose and curr_minute > minutes_counter:

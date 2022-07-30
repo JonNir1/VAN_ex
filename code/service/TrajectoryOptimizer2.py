@@ -17,28 +17,18 @@ class TrajectoryOptimizer2:
         self.keyframe_idxs = self.__choose_keyframe_indices(tracks.index.unique(level=DataBase.FRAMEIDX).max(), 15)
         self.tracks = tracks
         self.relative_cameras = relative_cams
-        self.bundles: List[Bundle2] = []
+        self.bundles = self.__build_bundles()
 
     def optimize(self, verbose=False):
         start_time, minutes_counter = time.time(), 0
-        num_keyframes = len(self.keyframe_idxs)
+        num_bundles = len(self.bundles)
         if verbose:
-            print(f"Starting trajectory optimization for {num_keyframes - 1} Bundles...\n")
-
-        for i in range(num_keyframes - 1):
-            # extract data for this specific bundle:
-            start_idx, end_idx = self.keyframe_idxs[i], self.keyframe_idxs[i + 1]
-            bundle_frame_idxs = np.arange(start_idx, end_idx+1)
-            bundle_cams = self.relative_cameras[self.relative_cameras.index.isin(bundle_frame_idxs)]
-            bundle_tracks = self.tracks[self.tracks.index.get_level_values(level=DataBase.FRAMEIDX).isin(bundle_frame_idxs)]
-
-            # optimize current bundle:
-            bundle = Bundle2(bundle_cams, bundle_tracks)
-            initial_error = bundle.calculate_error(bundle.initial_estimates)
-            bundle.adjust()
-            final_error = bundle.calculate_error(bundle.optimized_estimates)
+            print(f"Starting trajectory optimization for {num_bundles} Bundles...\n")
+        for i, b in enumerate(self.bundles):
+            initial_error = b.calculate_error(b.initial_estimates)
+            b.adjust()
+            final_error = b.calculate_error(b.optimized_estimates)
             self.total_optimized += initial_error - final_error
-            self.bundles.append(bundle)
 
             # print every minute if verbose:
             curr_minute = int((time.time() - start_time) / 60)
@@ -50,7 +40,7 @@ class TrajectoryOptimizer2:
         if verbose:
             total_minutes = elapsed / 60
             print(f"Finished Bundle adjustment within {total_minutes:.2f} minutes")
-            print(f"Mean error reduction per Bundle:\t{(self.total_optimized / (num_keyframes - 1)):.3f}")
+            print(f"Mean error reduction per Bundle:\t{(self.total_optimized / num_bundles):.3f}")
 
     def extract_all_relative_cameras(self) -> List[Camera]:
         cameras = []
@@ -80,3 +70,17 @@ class TrajectoryOptimizer2:
             return keypoint_idxs
         keypoint_idxs.append(all_idxs[-1])
         return keypoint_idxs
+
+    def __build_bundles(self) -> List[Bundle2]:
+        bundle_list = []
+        num_keyframes = len(self.keyframe_idxs)
+        for i in range(num_keyframes - 1):
+            # extract data for this specific bundle:
+            start_idx, end_idx = self.keyframe_idxs[i], self.keyframe_idxs[i + 1]
+            bundle_frame_idxs = np.arange(start_idx, end_idx + 1)
+            bundle_cams = self.relative_cameras[self.relative_cameras.index.isin(bundle_frame_idxs)]
+            bundle_tracks = self.tracks[
+                self.tracks.index.get_level_values(level=DataBase.FRAMEIDX).isin(bundle_frame_idxs)]
+            bundle = Bundle2(bundle_cams, bundle_tracks)
+            bundle_list.append(bundle)
+        return bundle_list
