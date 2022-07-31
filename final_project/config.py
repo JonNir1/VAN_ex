@@ -1,8 +1,8 @@
 import os
 import cv2
 
-# MAIN_DIRECTORY = "C:\\Users\\nirjo\\Documents\\University\\Masters\\Computer Vision Aided Navigation\\VAN_ex"  # Windows path
-MAIN_DIRECTORY = "/mnt/c/Users/nirjo/Documents/University/Masters/Computer Vision Aided Navigation/VAN_ex"  # WSL path
+MAIN_DIRECTORY = "C:\\Users\\nirjo\\Documents\\University\\Masters\\Computer Vision Aided Navigation\\VAN_ex"  # Windows path
+# MAIN_DIRECTORY = "/mnt/c/Users/nirjo/Documents/University/Masters/Computer Vision Aided Navigation/VAN_ex"  # WSL path
 DATA_READ_PATH = os.path.join(MAIN_DIRECTORY, 'dataset')
 DATA_WRITE_PATH = os.path.join(MAIN_DIRECTORY, "final_project", "outputs")
 

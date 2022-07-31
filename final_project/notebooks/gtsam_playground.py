@@ -35,15 +35,17 @@ def init(N: int = c.NUM_FRAMES):
 
 
 db = init()
+db.to_pickle()
 # db = DataBase.from_pickle("tracks2.pkl", "pnp_cameras2.pkl")
+
 ba = BundleAdjustment(db._tracks_db, db._cameras_db)
 ba_cameras = ba.optimize(verbose=True)
-pg = PoseGraph(ba.get_keyframe_indices(), ba_cameras, ba.extract_relative_covariances())
-pg_cameras, loop_results = close_loops(pg, verbose=True)
-
-# save resulting cameras to file
 filename_suffix = f"{datetime.now().strftime('%d%m%Y_%H%M')}.pkl"
 pd.Series(ba_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "ba_cameras" + filename_suffix))
+
+
+pg = PoseGraph(ba.get_keyframe_indices(), ba_cameras, ba.extract_relative_covariances())
+pg_cameras, loop_results = close_loops(pg, verbose=True)
 pd.Series(pg_cameras).to_pickle(os.path.join(c.DATA_WRITE_PATH, "pg_cameras" + filename_suffix))
 loop_results.to_pickle(os.path.join(c.DATA_WRITE_PATH, "loop_results" + filename_suffix))
 
@@ -54,7 +56,7 @@ elapsed = time.time() - start
 pnp_traj = Trajectory.from_relative_cameras(db._cameras_db)
 ba_traj = Trajectory.from_relative_cameras(ba_cameras)
 # pg_traj = Trajectory.from_relative_cameras(pg_cameras)
-gt_traj = Trajectory.read_ground_truth()
+gt_traj = Trajectory.from_ground_truth()
 
 pnp_dist = pnp_traj.calculate_distance(gt_traj)
 ba_dist = ba_traj.calculate_distance(gt_traj)
@@ -85,7 +87,7 @@ plt.show()
 
 # Compare BundleAdjustment._extract_cameras1 with BundleAdjustment._extract_cameras2
 
-opt_cams = [calculate_camera_from_gtsam_pose(ba._bundles[0]._cameras.loc[0, c.OptPose])]
+opt_cams = [gu.calculate_camera_from_gtsam_pose(ba._bundles[0]._cameras.loc[0, c.OptPose])]
 for i, b in enumerate(ba._bundles):
     # if i == 0:
     #     continue
@@ -103,8 +105,7 @@ for i, b in enumerate(ba._bundles):
         opt_cams.append(Camera.from_Rt(new_R, new_t))
 
 
-rel_cams = u.convert_to_relative_cameras(opt_cams)
-traj = Trajectory.from_relative_cameras(rel_cams)
+traj = Trajectory.from_absolute_cameras(opt_cams)
 
 ba2_dist_ba1 = traj.calculate_distance(ba_traj)
 ba2_dist_gt = traj.calculate_distance(gt_traj)

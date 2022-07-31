@@ -3,6 +3,8 @@ import time
 from datetime import datetime
 import numpy as np
 import pandas as pd
+import matplotlib
+from matplotlib import pyplot as plt
 
 import config as c
 import utils as u
@@ -14,6 +16,10 @@ from models.database import DataBase
 from service.TrajectoryOptimizer2 import TrajectoryOptimizer2
 from logic.PoseGraph import PoseGraph
 
+# change matplotlib's backend
+matplotlib.use("webagg")
+
+#####################################
 
 start = time.time()
 
